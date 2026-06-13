@@ -1,7 +1,7 @@
 # tmux-agent-plugin options
 
-This Rust plugin does not render a sidebar or own a popup. It provides values
-for tmux formats, status bars, and your own popup scripts.
+This Rust plugin provides values for tmux formats/status bars and includes an
+optional `fzf` popup navigator. The popup is disabled unless you set a key.
 
 Set options before loading `tmux-agent-plugin.tmux` / the TPM plugin.
 
@@ -18,6 +18,26 @@ Set options before loading `tmux-agent-plugin.tmux` / the TPM plugin.
 | `@agent-status-report-ttl` | `30` | Default explicit report TTL in seconds. |
 | `@agent-status-notify-active` | `off` | If `on`, notification events can include the active pane. |
 | `@agent-status-binary` | empty | Optional path to a prebuilt `tmux-agent-plugin` Rust binary. |
+
+## Popup
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `@agent-status-popup-key` | `off` | Prefix key that opens the popup, e.g. `a`. |
+| `@agent-status-popup-width` | `94%` | Popup width passed to `display-popup -w`. |
+| `@agent-status-popup-height` | `78%` | Popup height passed to `display-popup -h`. |
+| `@agent-status-popup-style` | `bg=terminal` | Popup style passed to `display-popup -s`. |
+| `@agent-status-popup-border-style` | `fg=#45475a,bg=terminal` | Border style passed to `display-popup -S`. |
+| `@agent-status-popup-title` | ` agents` | Popup title passed to `display-popup -T`. |
+
+Enable with:
+
+```tmux
+set -g @agent-status-popup-key 'a'
+```
+
+The popup uses `fzf`, supports search, shows a pane preview, `ctrl-r` refreshes,
+and enter jumps to the selected pane.
 
 ## Format helper options
 

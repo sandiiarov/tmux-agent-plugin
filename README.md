@@ -2,8 +2,8 @@
 
 A Rust, values-only tmux provider for AI/agent panes.
 
-It does **not** render a sidebar or own a popup. It returns structured values
-that you can use in your own tmux status bar, popup, fzf picker, or scripts:
+It does **not** render a sidebar. It returns structured values for status bars
+and includes an optional `fzf` popup navigator:
 
 - full list of detected/open agent panes
 - agent status: `blocked`, `working`, `done`, `idle`, `unknown`
@@ -143,23 +143,37 @@ Returns:
 }
 ```
 
-## Popup example
+## Popup navigator
 
-This plugin intentionally does not own popup rendering. Build your own popup
-from `agents.sh tsv` or `agents.sh json`.
-
-Minimal fzf popup binding:
+The plugin includes an optional `fzf` popup helper. It is not bound by default.
+Enable it with:
 
 ```tmux
-bind-key A display-popup -E -w 94% -h 78% \
-  '~/.tmux/plugins/tmux-agent-plugin/scripts/agents.sh tsv | tail -n +2 | \
-   fzf --delimiter="\t" --with-nth=1,2,3,4 --nth=1,2,3,4 | \
-   awk -F "\t" "{print \\$3}" | \
-   xargs -r tmux switch-client -t'
+set -g @agent-status-popup-key 'a'
 ```
 
-A richer popup can parse `agents.sh json`, color rows, add search fields, and
-switch to the selected `target`.
+Then press `prefix + a` to open a searchable popup. The popup shows agent
+status, agent name, tmux target, display name, cwd, and a live pane preview.
+Press enter to jump to the selected pane. Press `ctrl-r` inside fzf to refresh.
+
+Popup options:
+
+```tmux
+set -g @agent-status-popup-key 'a'       # off by default
+set -g @agent-status-popup-width '94%'
+set -g @agent-status-popup-height '78%'
+set -g @agent-status-popup-title ' agents'
+set -g @agent-status-popup-style 'bg=terminal'
+set -g @agent-status-popup-border-style 'fg=#45475a,bg=terminal'
+```
+
+You can also call the navigator directly:
+
+```sh
+scripts/popup.sh
+scripts/popup.sh --list          # print formatted rows
+scripts/popup.sh --select-first  # jump to first row, useful for tests
+```
 
 ## Notification events
 

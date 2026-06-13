@@ -835,7 +835,17 @@ fn compact(counts: &BTreeMap<String, usize>) -> String {
 
 fn print_tsv(payload: &AgentPayload) {
     let columns = [
-        "status", "agent", "target", "name", "session", "window", "pane", "cwd",
+        "status",
+        "agent",
+        "target",
+        "name",
+        "session",
+        "window",
+        "pane",
+        "cwd",
+        "pane_id",
+        "window_id",
+        "session_id",
     ];
     println!("{}", columns.join("\t"));
     for item in &payload.agents {
@@ -848,6 +858,9 @@ fn print_tsv(payload: &AgentPayload) {
             item.window.index.as_str(),
             item.pane.index.as_str(),
             item.pane.current_path.as_str(),
+            item.pane.id.as_str(),
+            item.window.id.as_str(),
+            item.session.id.as_str(),
         ];
         println!("{}", values.map(clean_tsv).join("\t"));
     }

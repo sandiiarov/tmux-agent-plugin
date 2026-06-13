@@ -18,6 +18,12 @@ set_default_options() {
 	set_tmux_option_if_unset "$REPORT_TTL_OPTION" "$DEFAULT_REPORT_TTL"
 	set_tmux_option_if_unset "$NOTIFY_ACTIVE_OPTION" "$DEFAULT_NOTIFY_ACTIVE"
 	set_tmux_option_if_unset "$BINARY_OPTION" "$DEFAULT_BINARY"
+	set_tmux_option_if_unset "$POPUP_KEY_OPTION" "$DEFAULT_POPUP_KEY"
+	set_tmux_option_if_unset "$POPUP_WIDTH_OPTION" "$DEFAULT_POPUP_WIDTH"
+	set_tmux_option_if_unset "$POPUP_HEIGHT_OPTION" "$DEFAULT_POPUP_HEIGHT"
+	set_tmux_option_if_unset "$POPUP_STYLE_OPTION" "$DEFAULT_POPUP_STYLE"
+	set_tmux_option_if_unset "$POPUP_BORDER_STYLE_OPTION" "$DEFAULT_POPUP_BORDER_STYLE"
+	set_tmux_option_if_unset "$POPUP_TITLE_OPTION" "$DEFAULT_POPUP_TITLE"
 }
 
 set_format_helpers() {
@@ -32,10 +38,27 @@ set_format_helpers() {
 	set_tmux_option "@agent-status-json" "#($SCRIPTS_DIR/agents.sh json)"
 }
 
+bind_popup_key() {
+	local key width height style border_style title
+	key="$(get_tmux_option "$POPUP_KEY_OPTION" "$DEFAULT_POPUP_KEY")"
+	if [ -z "$key" ] || [ "$key" = "off" ]; then
+		return 0
+	fi
+
+	width="$(get_tmux_option "$POPUP_WIDTH_OPTION" "$DEFAULT_POPUP_WIDTH")"
+	height="$(get_tmux_option "$POPUP_HEIGHT_OPTION" "$DEFAULT_POPUP_HEIGHT")"
+	style="$(get_tmux_option "$POPUP_STYLE_OPTION" "$DEFAULT_POPUP_STYLE")"
+	border_style="$(get_tmux_option "$POPUP_BORDER_STYLE_OPTION" "$DEFAULT_POPUP_BORDER_STYLE")"
+	title="$(get_tmux_option "$POPUP_TITLE_OPTION" "$DEFAULT_POPUP_TITLE")"
+
+	tmux bind-key "$key" display-popup -E -w "$width" -h "$height" -s "$style" -S "$border_style" -T "$title" "$SCRIPTS_DIR/popup.sh"
+}
+
 main() {
 	ensure_agent_status_dirs
 	set_default_options
 	set_format_helpers
+	bind_popup_key
 }
 
 main

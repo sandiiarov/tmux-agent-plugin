@@ -63,6 +63,17 @@ assert item["status"] == "blocked", item
 assert item["target"] == "tap:0.1", item
 PY
 
+popup_file="$TMP_DIR/popup.txt"
+run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/popup.sh' --list > '$popup_file'"
+wait_for_file "$popup_file"
+grep -F 'claude' "$popup_file" >/dev/null
+grep -F "$agent_pane" "$popup_file" >/dev/null
+
+run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/popup.sh' --select-first"
+sleep 0.2
+active_pane="$(run_tmux display-message -p '#{pane_id}')"
+[ "$active_pane" = "$agent_pane" ]
+
 count_file="$TMP_DIR/count.txt"
 run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/agents.sh' count blocked > '$count_file'"
 wait_for_file "$count_file"
