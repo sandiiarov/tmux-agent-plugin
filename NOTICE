@@ -3,21 +3,24 @@ tmux-agent-plugin notices
 
 This project is MIT licensed.
 
-Sidebar lifecycle inspiration
------------------------------
+Herdr behavior reference
+------------------------
 
-The tmux pane lifecycle/layout approach is adapted from tmux-sidebar:
+This project reimplements Herdr-like agent status and notification concepts for
+tmux from public behavior and architecture descriptions, with a clean-room Rust
+implementation. Herdr is AGPL-3.0-or-later/commercial dual-licensed; no Herdr
+source code or bundled manifests are copied here.
+
+  https://github.com/ogulcancelik/herdr
+
+Tmux plugin conventions
+-----------------------
+
+Some shell wrapper and option-helper patterns follow common TPM/tmux plugin
+conventions. Earlier research also reviewed tmux-sidebar's MIT-licensed plugin
+shape:
 
   https://github.com/tmux-plugins/tmux-sidebar
 
 Copyright (C) 2014 Bruno Sutic
 Licensed under the MIT License.
-
-Herdr behavior reference
-------------------------
-
-This project reimplements Herdr-like agent status concepts for tmux from public
-behavior and architecture descriptions. Herdr is AGPL-3.0-or-later/commercial
-dual-licensed; no Herdr source code or bundled manifests are copied here.
-
-  https://github.com/ogulcancelik/herdr

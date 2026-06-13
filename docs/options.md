@@ -1,53 +1,87 @@
 # tmux-agent-plugin options
 
-Set options before loading `agent-sidebar.tmux`.
+This Rust plugin does not render a sidebar or own a popup. It provides values
+for tmux formats, status bars, and your own popup scripts.
 
-## Key bindings
+Set options before loading `tmux-agent-plugin.tmux` / the TPM plugin.
 
-Set a key option to a tmux key name or `off`.
-
-| Option | Default | Description |
-| --- | --- | --- |
-| `@agent-sidebar-toggle-key` | `Tab` | Toggle sidebar and preserve focus. |
-| `@agent-sidebar-focus-key` | `Bspace` | Toggle sidebar and focus it when opening. |
-| `@agent-sidebar-refresh-key` | `R` | Refresh cached state. |
-| `@agent-sidebar-jump-key` | `Enter` | From sidebar, jump to owner pane. |
-| `@agent-sidebar-next-blocked-key` | `B` | Jump to next blocked pane. |
-| `@agent-sidebar-next-done-key` | `D` | Jump to next done pane and acknowledge it. |
-| `@agent-sidebar-ack-all-key` | `A` | Acknowledge all done panes in scope. |
-
-## Layout
+## Collection
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `@agent-sidebar-position` | `left` | Sidebar placement: `left` or `right`. |
-| `@agent-sidebar-width` | `40` | Preferred sidebar width in columns. |
-| `@agent-sidebar-minimum-width` | `71` | Minimum owner pane width needed to open. |
+| `@agent-status-scope` | `all` | One of `all`, `current-session`, or `current-window`. |
+| `@agent-status-include-non-agents` | `off` | Include panes without detected/reported agent identity. |
+| `@agent-status-process-detection` | `on` | Enable best-effort process/argv inspection with `ps`. |
+| `@agent-status-output-detection` | `on` | Enable `tmux capture-pane` screen-state detection. |
+| `@agent-status-capture-lines` | `80` | Lines captured from each candidate pane. |
+| `@agent-status-cache-ttl` | `2` | Seconds a status command may reuse cached JSON before recollecting. |
+| `@agent-status-report-ttl` | `30` | Default explicit report TTL in seconds. |
+| `@agent-status-notify-active` | `off` | If `on`, notification events can include the active pane. |
+| `@agent-status-binary` | empty | Optional path to a prebuilt `tmux-agent-plugin` Rust binary. |
 
-Widths are remembered per cwd in
-`${XDG_DATA_HOME:-$HOME/.local/share}/tmux-agent-plugin/directory_widths.tsv`.
+## Format helper options
 
-## Detection and rendering
+When loaded, the plugin sets these tmux options for convenience:
 
-| Option | Default | Description |
-| --- | --- | --- |
-| `@agent-sidebar-refresh-interval` | `2` | Sidebar refresh interval in seconds. |
-| `@agent-sidebar-capture-lines` | `80` | Lines captured from each candidate pane. |
-| `@agent-sidebar-scope` | `current-session` | One of `current-session`, `current-window`, or `all`. |
-| `@agent-sidebar-include-non-agents` | `off` | Include panes without detected/report agent identity. |
-| `@agent-sidebar-process-detection` | `on` | Enable best-effort process/argv inspection. |
-| `@agent-sidebar-output-detection` | `on` | Enable `capture-pane` screen-state detection. |
-| `@agent-sidebar-style` | `on` | Enable ANSI color/style in the sidebar. |
-| `@agent-sidebar-show-project` | `on` | Show cwd basename instead of title when possible. |
-| `@agent-sidebar-notify` | `off` | Show `tmux display-message` notifications for blocked/done transitions. |
-| `@agent-sidebar-python` | `python3` | Python 3 executable used by collector/renderer/action scripts. |
-| `@agent-sidebar-report-ttl` | `30` | Default explicit report TTL in seconds. |
+| Option | Expands to |
+| --- | --- |
+| `@agent-status-summary` | `#(.../scripts/agents.sh summary)` |
+| `@agent-status-compact` | `#(.../scripts/agents.sh compact)` |
+| `@agent-status-spinner` | `#(.../scripts/agents.sh spinner)` |
+| `@agent-status-count` | `#(.../scripts/agents.sh count all)` |
+| `@agent-status-working-count` | `#(.../scripts/agents.sh count working)` |
+| `@agent-status-blocked-count` | `#(.../scripts/agents.sh count blocked)` |
+| `@agent-status-done-count` | `#(.../scripts/agents.sh count done)` |
+| `@agent-status-json` | `#(.../scripts/agents.sh json)` |
 
-## Report CLI
+Use them with `#{E:...}`:
+
+```tmux
+set -ag status-right ' #{E:@agent-status-compact}'
+```
+
+## Raw script API
 
 ```sh
-scripts/report.sh --pane %1 --agent pi --state working --label "running tests" --ttl 30
-scripts/report.sh --pane %1 --clear
+scripts/agents.sh json              # full payload
+scripts/agents.sh tsv               # tab-separated rows
+scripts/agents.sh summary           # human-readable status text
+scripts/agents.sh compact           # compact status text
+scripts/agents.sh spinner           # spinner only when working > 0
+scripts/agents.sh count all
+scripts/agents.sh count working
+scripts/agents.sh count blocked
+scripts/agents.sh count done
+scripts/agents.sh refresh           # refresh cache, print nothing
+```
+
+The wrappers call the Rust binary. If `target/release/tmux-agent-plugin` is
+missing and `cargo` exists, `scripts/bin.sh` builds it once. To avoid first-use
+latency, run:
+
+```sh
+cargo build --release
+```
+
+## Notification events
+
+```sh
+scripts/notify.sh json              # return transition events as JSON
+scripts/notify.sh tmux              # show tmux display-message events
+scripts/notify.sh system            # macOS/Linux desktop notification if available
+scripts/notify.sh both              # tmux + system
+```
+
+Event rules:
+
+- new `blocked` status => `needs_attention`
+- `working`/`blocked` transitioning to `done`/`idle` => `finished`
+
+## Explicit reports
+
+```sh
+scripts/report.sh --pane "$TMUX_PANE" --agent pi --state working --label "running tests" --ttl 30
+scripts/report.sh --pane "$TMUX_PANE" --clear
 ```
 
 Valid states are `blocked`, `working`, `done`, `idle`, and `unknown`.

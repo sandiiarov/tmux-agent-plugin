@@ -1,5 +1,7 @@
+target/
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .DS_Store
 PLAN.md
+PLAN-RS.md

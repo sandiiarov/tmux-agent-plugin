@@ -20,11 +20,6 @@ set_tmux_option() {
 	tmux set-option -gq "$option" "$value"
 }
 
-unset_tmux_option() {
-	local option="$1"
-	tmux set-option -guq "$option" 2>/dev/null || tmux set-option -gq "$option" ""
-}
-
 set_tmux_option_if_unset() {
 	local option="$1"
 	local value="$2"
@@ -53,21 +48,6 @@ display_message() {
 	tmux set-option -gq display-time "$saved_display_time"
 }
 
-get_pane_info() {
-	local pane_id="$1"
-	local format_string="$2"
-	tmux display-message -p -t "$pane_id" "$format_string" 2>/dev/null
-}
-
-pane_exists() {
-	local pane_id="$1"
-	tmux list-panes -a -F '#{pane_id}' 2>/dev/null | grep -Fxq "$pane_id"
-}
-
-current_client_pane() {
-	tmux display-message -p '#{pane_id}' 2>/dev/null
-}
-
 _get_digits_from_string() {
 	printf '%s\n' "$1" | tr -dC '[:digit:]'
 }
@@ -91,41 +71,7 @@ ensure_supported_tmux_version() {
 	fi
 }
 
-ensure_agent_sidebar_dirs() {
-	mkdir -p "$(agent_sidebar_data_dir)" "$(agent_sidebar_cache_dir)" "$(agent_sidebar_cache_dir)/reports"
+ensure_agent_status_dirs() {
+	mkdir -p "$(agent_status_data_dir)" "$(agent_status_cache_dir)" "$(agent_status_cache_dir)/reports"
 }
 
-sanitize_width_path() {
-	# Keep the width file line-oriented and tab-separated.
-	printf '%s' "$1" | tr '\t\n\r' '   '
-}
-
-remembered_width_for_path() {
-	local pane_path="$1"
-	local width_file
-	width_file="$(agent_sidebar_width_file)"
-	[ -f "$width_file" ] || return 1
-	awk -F '\t' -v p="$(sanitize_width_path "$pane_path")" '$1 == p { value = $2 } END { if (value != "") print value }' "$width_file"
-}
-
-save_width_for_path() {
-	local pane_path="$1"
-	local width="$2"
-	local width_file tmp_file clean_path
-	ensure_agent_sidebar_dirs
-	width_file="$(agent_sidebar_width_file)"
-	tmp_file="${width_file}.$$"
-	clean_path="$(sanitize_width_path "$pane_path")"
-	awk -F '\t' -v p="$clean_path" '$1 != p { print }' "$width_file" 2>/dev/null > "$tmp_file" || true
-	printf '%s\t%s\n' "$clean_path" "$width" >> "$tmp_file"
-	mv "$tmp_file" "$width_file"
-}
-
-python_bin() {
-	get_tmux_option "$PYTHON_OPTION" "$DEFAULT_PYTHON"
-}
-
-shell_quote() {
-	# Bash-only helper used by Bash entrypoints when constructing tmux commands.
-	printf '%q' "$1"
-}

@@ -2,18 +2,22 @@
 
 ## Unreleased
 
-- Initial tmux plugin scaffold and TPM/manual entrypoint.
-- Toggleable left/right agent sidebar with focus-preserving lifecycle.
-- Pane inventory, foreground process inspection, and agent label detection.
-- Clean-room capture-based state detection for blocked/working/done/idle/unknown.
-- Live sidebar renderer with icons/colors and prefix-key navigation actions.
-- Optional report CLI for explicit status/label integration.
+- Rewrote the provider as a Rust CLI (`src/main.rs`).
+- Pivoted to a values-only tmux provider: no sidebar or popup renderer.
+- Added `scripts/bin.sh` to resolve/build the Rust binary on first use.
+- Added `scripts/agents.sh` for JSON, TSV, counts, compact summaries, and spinner output.
+- Added tmux format helper options such as `@agent-status-compact` and `@agent-status-json`.
+- Added `scripts/notify.sh` for transition events as JSON, tmux messages, or system notifications.
+- Kept `scripts/report.sh` for explicit status integrations, now backed by Rust.
+- Replaced the historical `agent-sidebar.tmux` entrypoint with `tmux-agent-plugin.tmux`.
+- Removed sidebar/action/render Python scripts and Python unit tests.
 
 ## Release checklist
 
-- Run `python3 -m unittest discover tests`.
-- Run `./tests/smoke_tmux.sh` on macOS and Linux where possible.
-- Run ShellCheck if installed: `shellcheck agent-sidebar.tmux scripts/*.sh tests/*.sh`.
+- Run `cargo fmt --check`.
+- Run `cargo test`.
+- Run `cargo build --release`.
+- Run `bash -n tmux-agent-plugin.tmux scripts/*.sh tests/*.sh`.
+- Run `./tests/smoke_tmux_values.sh`.
 - Verify manual `run-shell` install instructions.
-- Verify TPM install instructions after publishing the repository.
-- Update screenshots/demo docs if rendering changed.
+- Verify TPM install instructions after publishing.
