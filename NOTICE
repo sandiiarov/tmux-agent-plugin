@@ -1,0 +1,23 @@
+tmux-agent-plugin notices
+=========================
+
+This project is MIT licensed.
+
+Sidebar lifecycle inspiration
+-----------------------------
+
+The tmux pane lifecycle/layout approach is adapted from tmux-sidebar:
+
+  https://github.com/tmux-plugins/tmux-sidebar
+
+Copyright (C) 2014 Bruno Sutic
+Licensed under the MIT License.
+
+Herdr behavior reference
+------------------------
+
+This project reimplements Herdr-like agent status concepts for tmux from public
+behavior and architecture descriptions. Herdr is AGPL-3.0-or-later/commercial
+dual-licensed; no Herdr source code or bundled manifests are copied here.
+
+  https://github.com/ogulcancelik/herdr
