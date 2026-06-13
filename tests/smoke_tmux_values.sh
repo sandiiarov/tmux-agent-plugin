@@ -86,23 +86,16 @@ grep -F ' claude' "$view_file" >/dev/null
 
 run_tmux set-option -g @agent-status-view-key a
 run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/tmux-agent-plugin.tmux'"
-run_shell_wait "$normal_pane" "AGENT_STATUS_TARGET_PANE='$normal_pane' XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' toggle"
-sleep 0.5
-view_pane="$(run_tmux show-option -wqv -t "$normal_pane" @agent-status-view-pane)"
-[ -n "$view_pane" ]
-run_tmux display-message -p -t "$view_pane" '#{pane_id}' >/dev/null
-run_shell_wait "$normal_pane" "AGENT_STATUS_TARGET_PANE='$normal_pane' XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' down"
-run_shell_wait "$normal_pane" "AGENT_STATUS_TARGET_PANE='$normal_pane' XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' up"
-run_shell_wait "$normal_pane" "AGENT_STATUS_TARGET_PANE='$normal_pane' XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' toggle"
-view_closed=0
-for _ in $(seq 1 30); do
-	if ! run_tmux list-panes -F '#{pane_title}' | grep -Fx 'tmux-agent-plugin-view' >/dev/null; then
-		view_closed=1
-		break
-	fi
-	sleep 0.2
-done
-[ "$view_closed" -eq 1 ]
+run_tmux list-keys | grep -F 'display-popup' | grep -F 'view.sh' >/dev/null
+if run_tmux list-keys -T root C-n 2>/dev/null | grep -F 'view.sh' >/dev/null; then
+	printf 'view should not bind root C-n outside the popup\n' >&2
+	exit 1
+fi
+run_shell_wait "$normal_pane" "printf '\\030' | XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' popup"
+run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' jump-index 0"
+active_from_view="$(run_tmux display-message -p '#{pane_id}')"
+[ "$active_from_view" = "$agent_pane" ]
+run_tmux select-pane -t "$normal_pane"
 
 run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/popup.sh' --select-first"
 sleep 0.2

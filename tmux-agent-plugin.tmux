@@ -62,32 +62,42 @@ bind_popup_key() {
 	tmux bind-key "$key" display-popup -E -w "$width" -h "$height" -s "$style" -S "$border_style" -T "$title" "$SCRIPTS_DIR/popup.sh"
 }
 
+unbind_view_root_key_if_owned() {
+	local key="$1" binding
+	[ -n "$key" ] && [ "$key" != "off" ] || return 0
+	binding="$(tmux list-keys -T root "$key" 2>/dev/null || true)"
+	case "$binding" in
+		*"$SCRIPTS_DIR/view.sh"*) tmux unbind-key -n "$key" 2>/dev/null || true ;;
+	esac
+}
+
+cleanup_old_view_root_keys() {
+	unbind_view_root_key_if_owned "$(get_tmux_option "$VIEW_UP_KEY_OPTION" "$DEFAULT_VIEW_UP_KEY")"
+	unbind_view_root_key_if_owned "$(get_tmux_option "$VIEW_DOWN_KEY_OPTION" "$DEFAULT_VIEW_DOWN_KEY")"
+	unbind_view_root_key_if_owned "$(get_tmux_option "$VIEW_ENTER_KEY_OPTION" "$DEFAULT_VIEW_ENTER_KEY")"
+	unbind_view_root_key_if_owned "$(get_tmux_option "$VIEW_EXIT_KEY_OPTION" "$DEFAULT_VIEW_EXIT_KEY")"
+	unbind_view_root_key_if_owned "C-n"
+	unbind_view_root_key_if_owned "C-p"
+	unbind_view_root_key_if_owned "C-o"
+	unbind_view_root_key_if_owned "C-x"
+}
+
 bind_view_key() {
-	local key up_key down_key enter_key exit_key
+	local key width height style border_style title
+	cleanup_old_view_root_keys
+
 	key="$(get_tmux_option "$VIEW_KEY_OPTION" "$DEFAULT_VIEW_KEY")"
 	if [ -z "$key" ] || [ "$key" = "off" ]; then
 		return 0
 	fi
 
-	tmux bind-key "$key" run-shell "AGENT_STATUS_TARGET_PANE='#{pane_id}' '$SCRIPTS_DIR/view.sh' toggle"
+	width="$(get_tmux_option "$POPUP_WIDTH_OPTION" "$DEFAULT_POPUP_WIDTH")"
+	height="$(get_tmux_option "$POPUP_HEIGHT_OPTION" "$DEFAULT_POPUP_HEIGHT")"
+	style="$(get_tmux_option "$POPUP_STYLE_OPTION" "$DEFAULT_POPUP_STYLE")"
+	border_style="$(get_tmux_option "$POPUP_BORDER_STYLE_OPTION" "$DEFAULT_POPUP_BORDER_STYLE")"
+	title="$(get_tmux_option "$POPUP_TITLE_OPTION" "$DEFAULT_POPUP_TITLE")"
 
-	up_key="$(get_tmux_option "$VIEW_UP_KEY_OPTION" "$DEFAULT_VIEW_UP_KEY")"
-	down_key="$(get_tmux_option "$VIEW_DOWN_KEY_OPTION" "$DEFAULT_VIEW_DOWN_KEY")"
-	enter_key="$(get_tmux_option "$VIEW_ENTER_KEY_OPTION" "$DEFAULT_VIEW_ENTER_KEY")"
-	exit_key="$(get_tmux_option "$VIEW_EXIT_KEY_OPTION" "$DEFAULT_VIEW_EXIT_KEY")"
-
-	if [ -n "$up_key" ] && [ "$up_key" != "off" ]; then
-		tmux bind-key -n "$up_key" run-shell "AGENT_STATUS_TARGET_PANE='#{pane_id}' '$SCRIPTS_DIR/view.sh' up"
-	fi
-	if [ -n "$down_key" ] && [ "$down_key" != "off" ]; then
-		tmux bind-key -n "$down_key" run-shell "AGENT_STATUS_TARGET_PANE='#{pane_id}' '$SCRIPTS_DIR/view.sh' down"
-	fi
-	if [ -n "$enter_key" ] && [ "$enter_key" != "off" ]; then
-		tmux bind-key -n "$enter_key" run-shell "AGENT_STATUS_TARGET_PANE='#{pane_id}' '$SCRIPTS_DIR/view.sh' enter"
-	fi
-	if [ -n "$exit_key" ] && [ "$exit_key" != "off" ]; then
-		tmux bind-key -n "$exit_key" run-shell "AGENT_STATUS_TARGET_PANE='#{pane_id}' '$SCRIPTS_DIR/view.sh' close"
-	fi
+	tmux bind-key "$key" display-popup -E -w "$width" -h "$height" -s "$style" -S "$border_style" -T "$title" "$SCRIPTS_DIR/view.sh" popup
 }
 
 main() {

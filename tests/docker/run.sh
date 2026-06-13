@@ -70,6 +70,9 @@ EOF
 
 run_tmux -f "$TMP_DIR/tmux.conf" new-session -d -s agents -n work 'bash --noprofile --norc'
 shell_pane="$(run_tmux display-message -p -t agents:work '#{pane_id}')"
+# Detached TPM startup can race with assertions; source the plugin explicitly so
+# option defaults and bindings are deterministic in this harness.
+run_shell_wait "$shell_pane" "'$PLUGIN_DIR/tmux-agent-plugin.tmux'"
 
 printf '[3/8] starting fake pi/claude/codex/gemini agent panes\n'
 pi_pane="$(run_tmux split-window -d -t "$shell_pane" -h -P -F '#{pane_id}' "FAKE_AGENT_STATE=idle FAKE_AGENT_LABEL=pi pi")"
@@ -109,7 +112,7 @@ run_shell_wait "$shell_pane" "'$PLUGIN_DIR/scripts/popup.sh' --list > '$popup_fi
 assert_contains ' pi' "$popup_file"
 assert_contains ' claude' "$popup_file"
 
-printf '[6/8] checking split-view render format\n'
+printf '[6/8] checking popup-view render format\n'
 view_file="$TMP_DIR/view.txt"
 run_shell_wait "$shell_pane" "AGENT_STATUS_TARGET_PANE='$shell_pane' '$PLUGIN_DIR/scripts/view.sh' render > '$view_file'"
 assert_contains '' "$view_file"
@@ -118,19 +121,16 @@ assert_contains ' pi' "$view_file"
 assert_contains ' claude' "$view_file"
 assert_contains 'codex' "$view_file"
 assert_contains 'gemini' "$view_file"
+assert_contains '│' "$view_file"
 
-printf '[7/8] checking split-view interactivity and controls\n'
-run_shell_wait "$shell_pane" "AGENT_STATUS_TARGET_PANE='$shell_pane' '$PLUGIN_DIR/scripts/view.sh' toggle"
-view_pane="$(run_tmux show-option -wqv -t "$shell_pane" @agent-status-view-pane)"
-[ -n "$view_pane" ]
-run_tmux display-message -p -t "$view_pane" '#{pane_id}' >/dev/null
-active_after_open="$(run_tmux display-message -p '#{pane_id}')"
-[ "$active_after_open" = "$shell_pane" ]
-
-# The right side is a real shell pane, so normal interaction should still work.
-run_tmux send-keys -t "$shell_pane" "printf interactive > '$TMP_DIR/interactive.txt'" C-m
-wait_for_file "$TMP_DIR/interactive.txt"
-assert_contains 'interactive' "$TMP_DIR/interactive.txt"
+printf '[7/8] checking popup-view binding and controls\n'
+run_tmux list-keys | grep -F 'display-popup' | grep -F 'view.sh' >/dev/null
+for key in C-n C-p C-o C-x; do
+	if run_tmux list-keys -T root "$key" 2>/dev/null | grep -F 'view.sh' >/dev/null; then
+		printf 'view should not bind root %s outside the popup\n' "$key" >&2
+		exit 1
+	fi
+done
 
 selected_tsv="$TMP_DIR/selected.tsv"
 run_shell_wait "$shell_pane" "'$PLUGIN_DIR/scripts/agents.sh' tsv --refresh > '$selected_tsv'"
@@ -139,44 +139,23 @@ expected_second_pane="$(awk -F '\t' 'NR == 3 { print $9 }' "$selected_tsv")"
 [ -n "$expected_first_pane" ]
 [ -n "$expected_second_pane" ]
 
-run_shell_wait "$shell_pane" "AGENT_STATUS_TARGET_PANE='$shell_pane' '$PLUGIN_DIR/scripts/view.sh' down"
-active_after_down="$(run_tmux display-message -p '#{pane_id}')"
-[ "$active_after_down" = "$expected_second_pane" ]
-selected_index="$(run_tmux show-option -wqv -t "$active_after_down" @agent-status-view-index)"
-[ "$selected_index" = "1" ]
+# C-x exits the popup without jumping.
+run_tmux select-pane -t "$shell_pane"
+run_shell_wait "$shell_pane" "printf '\\030' | '$PLUGIN_DIR/scripts/view.sh' popup"
+active_after_close="$(run_tmux display-message -p '#{pane_id}')"
+[ "$active_after_close" = "$shell_pane" ]
 
-run_shell_wait "$active_after_down" "AGENT_STATUS_TARGET_PANE='$active_after_down' '$PLUGIN_DIR/scripts/view.sh' up"
-active_after_up="$(run_tmux display-message -p '#{pane_id}')"
-[ "$active_after_up" = "$expected_first_pane" ]
-selected_index="$(run_tmux show-option -wqv -t "$active_after_up" @agent-status-view-index)"
-[ "$selected_index" = "0" ]
+# C-n moves down inside the popup, then C-o jumps to that selected pane.
+run_shell_wait "$shell_pane" "printf '\\016\\017' | '$PLUGIN_DIR/scripts/view.sh' popup"
+active_after_jump="$(run_tmux display-message -p '#{pane_id}')"
+[ "$active_after_jump" = "$expected_second_pane" ]
 
-run_shell_wait "$active_after_up" "AGENT_STATUS_TARGET_PANE='$active_after_up' '$PLUGIN_DIR/scripts/view.sh' enter"
-active_after_enter="$(run_tmux display-message -p '#{pane_id}')"
-[ "$active_after_enter" = "$expected_first_pane" ]
-for _ in $(seq 1 30); do
-	if ! run_tmux list-panes -F '#{pane_title}' | grep -Fx 'tmux-agent-plugin-view' >/dev/null; then
-		break
-	fi
-	sleep 0.1
-done
+# Explicit jump helper is useful for non-interactive tests and should not create panes.
+run_shell_wait "$active_after_jump" "'$PLUGIN_DIR/scripts/view.sh' jump-index 0"
+active_after_helper="$(run_tmux display-message -p '#{pane_id}')"
+[ "$active_after_helper" = "$expected_first_pane" ]
 if run_tmux list-panes -F '#{pane_title}' | grep -Fx 'tmux-agent-plugin-view' >/dev/null; then
-	printf 'view pane did not close after enter\n' >&2
-	run_tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{pane_id} #{pane_title}' >&2
-	exit 1
-fi
-
-# C-x/close exits the view without changing panes.
-run_shell_wait "$active_after_enter" "AGENT_STATUS_TARGET_PANE='$active_after_enter' '$PLUGIN_DIR/scripts/view.sh' toggle"
-run_shell_wait "$active_after_enter" "AGENT_STATUS_TARGET_PANE='$active_after_enter' '$PLUGIN_DIR/scripts/view.sh' close"
-for _ in $(seq 1 30); do
-	if ! run_tmux list-panes -F '#{pane_title}' | grep -Fx 'tmux-agent-plugin-view' >/dev/null; then
-		break
-	fi
-	sleep 0.1
-done
-if run_tmux list-panes -F '#{pane_title}' | grep -Fx 'tmux-agent-plugin-view' >/dev/null; then
-	printf 'view pane did not close after close command\n' >&2
+	printf 'popup view should not create tmux panes\n' >&2
 	run_tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{pane_id} #{pane_title}' >&2
 	exit 1
 fi

@@ -11,7 +11,7 @@ and includes optional tmux helpers for navigation:
 - counts for status bars
 - spinner indicator when agents are working
 - notification transition events
-- optional split view: left agent list, right interactive tmux pane
+- optional popup view: left agent list, right live pane preview
 
 ## Install
 
@@ -46,8 +46,8 @@ authenticated real agent accounts.
 ./tests/docker_smoke.sh
 ```
 
-The test verifies TPM loading, JSON values, popup formatting, split-view
-rendering, split-view controls, and that the right pane remains interactive.
+The test verifies TPM loading, JSON values, popup formatting, popup-view
+rendering, popup controls, and pane jumping.
 
 ## Status bar examples
 
@@ -158,37 +158,36 @@ Returns:
 }
 ```
 
-## Split view navigator
+## Popup view navigator
 
-The plugin includes an optional tmux split view. It is not bound by default.
-It creates a 20% left pane with agents grouped by tmux session, while the right
-side remains your real tmux pane/layout, so it is fully interactive.
+The plugin includes an optional tmux popup view. It is not bound by default.
+It opens a real tmux popup with agents grouped by tmux session on the left and a
+captured preview of the selected pane on the right. Moving the selection updates
+the preview inside the popup instead of creating or focusing tmux panes.
 
 ```tmux
-set -g @agent-status-view-key 'a'       # prefix + a toggles the view
-set -g @agent-status-view-width '20%'
+set -g @agent-status-view-key 'a'       # prefix + a opens the popup view
+set -g @agent-status-view-width '20%'   # left-column width inside the popup
 set -g @agent-status-view-refresh '2'
 set -g @agent-status-nerd-icons 'on'    # optional; claude =>  claude, pi =>  pi
 ```
 
-Controls while the view is open:
+Controls inside the popup:
 
-- `C-n`: move selection down in the agent list and focus that pane on the right
-- `C-p`: move selection up in the agent list and focus that pane on the right
-- `C-o`: enter the selected real tmux pane and close the left agent list
-- `C-x`: close the left agent list
+- `C-n`: move selection down and update the pane preview
+- `C-p`: move selection up and update the pane preview
+- `C-o`: jump to the selected real tmux pane and close the popup
+- `C-x`: close the popup
 
-When the view is closed, these control keys are passed through to the active
-pane.
+The control keys are read by the popup process only; they are not bound globally
+in tmux.
 
 You can also call it directly:
 
 ```sh
-scripts/view.sh toggle
+scripts/view.sh popup
 scripts/view.sh render
-scripts/view.sh up
-scripts/view.sh down
-scripts/view.sh enter
+scripts/view.sh jump-index 0
 ```
 
 ## Popup navigator

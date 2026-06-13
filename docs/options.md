@@ -1,7 +1,7 @@
 # tmux-agent-plugin options
 
 This Rust plugin provides values for tmux formats/status bars and includes
-optional tmux navigators: a split view and an `fzf` popup. Both are disabled
+optional tmux navigators: a popup view and an `fzf` popup. Both are disabled
 unless you set a key.
 
 Set options before loading `tmux-agent-plugin.tmux` / the TPM plugin.
@@ -21,17 +21,13 @@ Set options before loading `tmux-agent-plugin.tmux` / the TPM plugin.
 | `@agent-status-binary` | empty | Optional path to a prebuilt `tmux-agent-plugin` Rust binary. |
 | `@agent-status-nerd-icons` | `off` | If `on`, use Nerd Font icons in formatted navigator rows. |
 
-## Split view
+## Popup view
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `@agent-status-view-key` | `off` | Prefix key that toggles the split view, e.g. `a`. |
-| `@agent-status-view-width` | `20%` | Width of the left agent-list pane. Accepts cells or percent. |
-| `@agent-status-view-refresh` | `2` | Seconds between automatic refreshes of the left pane. |
-| `@agent-status-view-up-key` | `C-p` | Root key that moves selection up while the view is open; passes through otherwise. |
-| `@agent-status-view-down-key` | `C-n` | Root key that moves selection down while the view is open; passes through otherwise. |
-| `@agent-status-view-enter-key` | `C-o` | Root key that enters the selected agent pane and closes the view; passes through otherwise. |
-| `@agent-status-view-exit-key` | `C-x` | Root key that closes the view; passes through otherwise. |
+| `@agent-status-view-key` | `off` | Prefix key that opens the popup view, e.g. `a`. |
+| `@agent-status-view-width` | `20%` | Width of the left agent-list column inside the popup. Accepts cells or percent. |
+| `@agent-status-view-refresh` | `2` | Seconds between automatic popup refreshes. |
 
 Enable with:
 
@@ -41,10 +37,10 @@ set -g @agent-status-view-width '20%'
 set -g @agent-status-nerd-icons 'on' # optional; claude =>  claude, pi =>  pi
 ```
 
-The split view groups agents by tmux session on the left. The right side is the
-real tmux pane/layout, so it remains interactive. Controls: `C-n` selection
-down and focus on the right, `C-p` selection up and focus on the right, `C-o`
-enter selected pane and close the view, `C-x` close the view.
+The popup view groups agents by tmux session on the left and shows a captured
+preview of the selected pane on the right. It does not create tmux panes and it
+does not bind root keys. Controls are handled inside the popup: `C-n` selection
+down, `C-p` selection up, `C-o` jump to selected pane and close, `C-x` close.
 
 ## Popup
 
