@@ -19,16 +19,31 @@ interval() {
 	esac
 }
 
+LAST_RENDER=""
+
+cleanup() {
+	printf '\033[?25h'
+}
+trap cleanup EXIT HUP INT TERM
+
 render_once() {
-	local python
+	local python output
 	python="$(python_bin)"
-	printf '\033[H\033[2J'
 	if command -v "$python" >/dev/null 2>&1; then
-		"$python" "$CURRENT_DIR/render.py" --owner "$OWNER_PANE_ID" --pane "$SIDEBAR_PANE_ID" || true
+		output="$($python "$CURRENT_DIR/render.py" --owner "$OWNER_PANE_ID" --pane "$SIDEBAR_PANE_ID" 2>&1 || true)"
 	else
-		printf 'tmux-agent-plugin\n\n'
-		printf 'Python not found: %s\n' "$python"
-		printf 'Set @agent-sidebar-python to a Python 3 executable.\n'
+		output="tmux-agent-plugin
+
+Python not found: $python
+Set @agent-sidebar-python to a Python 3 executable."
+	fi
+
+	# Render into memory first, then repaint in place. This avoids flashing a
+	# blank pane while pane collection/capture is still running. Skip repainting
+	# entirely when nothing changed.
+	if [ "$output" != "$LAST_RENDER" ]; then
+		printf '\033[?25l\033[H%s\033[J' "$output"
+		LAST_RENDER="$output"
 	fi
 }
 
