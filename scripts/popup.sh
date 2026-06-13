@@ -210,7 +210,7 @@ open_popup() {
 		--prompt='agents> ' \
 		--header='C-n/C-p: move · C-o/enter: jump · esc: close · C-r: refresh' \
 		--preview="tmux capture-pane -t {1} -e -p -J -S -$lines 2>/dev/null" \
-		--preview-window='right,80%,border-left,nowrap,+0' \
+		--preview-window='right,80%,border-left,nowrap,follow,noinfo' \
 		--bind='ctrl-n:down,ctrl-p:up,ctrl-o:accept' \
 		--bind="ctrl-r:reload(AGENT_STATUS_REFRESH=on '$CURRENT_DIR/popup.sh' --list)" \
 		"$@")" || return 0
