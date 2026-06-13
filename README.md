@@ -56,7 +56,10 @@ the `#(...)` command stored in the option.
 
 ### Compact status
 
+Set a 1-second status refresh if you want the working spinner to animate:
+
 ```tmux
+set -g status-interval 1
 set -ag status-right ' #{E:@agent-status-compact}'
 ```
 

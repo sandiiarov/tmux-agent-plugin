@@ -68,9 +68,11 @@ When loaded, the plugin sets these tmux options for convenience:
 | `@agent-status-done-count` | `#(.../scripts/agents.sh count done)` |
 | `@agent-status-json` | `#(.../scripts/agents.sh json)` |
 
-Use them with `#{E:...}`:
+Use them with `#{E:...}`. Set a 1-second tmux status refresh if you want the
+working spinner to animate:
 
 ```tmux
+set -g status-interval 1
 set -ag status-right ' #{E:@agent-status-compact}'
 ```
 

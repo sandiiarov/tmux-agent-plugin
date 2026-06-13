@@ -805,7 +805,10 @@ fn spinner(counts: &BTreeMap<String, usize>) -> String {
     if counts.get("working").copied().unwrap_or(0) == 0 {
         return String::new();
     }
-    let frame = ((now_secs() * 5.0) as usize) % SPINNER_FRAMES.len();
+    // tmux status lines are typically refreshed at whole-second intervals via
+    // `status-interval`. Advancing one frame per second avoids aliasing where
+    // a 1s refresh only flips between two frames of a 10-frame spinner.
+    let frame = (now_secs() as usize) % SPINNER_FRAMES.len();
     SPINNER_FRAMES[frame].to_string()
 }
 
