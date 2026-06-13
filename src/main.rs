@@ -744,7 +744,7 @@ fn display_name(pane: &PaneRaw, report: Option<&ExplicitReport>, target: &str) -
         }
     }
     let title = pane.pane_title.trim();
-    if !title.is_empty() && !title.ends_with(".local") {
+    if is_useful_pane_title(title) {
         return title.to_string();
     }
     let path = pane.pane_current_path.trim();
@@ -757,6 +757,24 @@ fn display_name(pane: &PaneRaw, report: Option<&ExplicitReport>, target: &str) -
         return path.to_string();
     }
     target.to_string()
+}
+
+fn is_useful_pane_title(title: &str) -> bool {
+    let title = title.trim();
+    if title.is_empty() || title.ends_with(".local") {
+        return false;
+    }
+
+    // Some terminal programs can leak capability/escape-response fragments into
+    // tmux's pane title, e.g. "Ga=d,d=I,i=9000,q=2". Those are not human labels.
+    let has_whitespace = title.chars().any(char::is_whitespace);
+    let equals_count = title.matches('=').count();
+    let comma_count = title.matches(',').count();
+    if !has_whitespace && equals_count > 0 && comma_count > 0 {
+        return false;
+    }
+
+    true
 }
 
 fn counts(items: &[AgentItem]) -> BTreeMap<String, usize> {
@@ -1808,6 +1826,31 @@ mod tests {
             Some(123),
             None,
         )
+    }
+
+    #[test]
+    fn escape_response_titles_fall_back_to_directory_name() {
+        let pane = PaneRaw {
+            session_id: "$1".to_string(),
+            session_name: "project".to_string(),
+            window_id: "@2".to_string(),
+            window_index: "3".to_string(),
+            window_name: "shell".to_string(),
+            pane_id: "%4".to_string(),
+            pane_index: "1".to_string(),
+            pane_active: false,
+            window_active: false,
+            pane_current_command: "pi".to_string(),
+            pane_title: "Ga=d,d=I,i=9000,q=2".to_string(),
+            pane_current_path: "/tmp/tmux-agent-plugin".to_string(),
+            pane_pid: "123".to_string(),
+            pane_width: "100".to_string(),
+            pane_height: "30".to_string(),
+        };
+        assert_eq!(
+            display_name(&pane, None, "project:3.1"),
+            "tmux-agent-plugin"
+        );
     }
 
     #[test]
