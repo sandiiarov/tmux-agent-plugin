@@ -160,6 +160,7 @@ Popup options:
 
 ```tmux
 set -g @agent-status-popup-key 'a'       # off by default
+set -g @agent-status-nerd-icons 'on'     # optional icons in popup rows
 set -g @agent-status-popup-width '94%'
 set -g @agent-status-popup-height '78%'
 set -g @agent-status-popup-title ' agents'

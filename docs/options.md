@@ -18,6 +18,7 @@ Set options before loading `tmux-agent-plugin.tmux` / the TPM plugin.
 | `@agent-status-report-ttl` | `30` | Default explicit report TTL in seconds. |
 | `@agent-status-notify-active` | `off` | If `on`, notification events can include the active pane. |
 | `@agent-status-binary` | empty | Optional path to a prebuilt `tmux-agent-plugin` Rust binary. |
+| `@agent-status-nerd-icons` | `off` | If `on`, use Nerd Font icons in formatted popup rows. |
 
 ## Popup
 
@@ -34,6 +35,7 @@ Enable with:
 
 ```tmux
 set -g @agent-status-popup-key 'a'
+set -g @agent-status-nerd-icons 'on' # optional; claude =>  claude, pi =>  pi
 ```
 
 The popup uses `fzf`, supports search, shows a pane preview, `ctrl-r` refreshes,

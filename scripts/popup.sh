@@ -3,6 +3,19 @@ set -euo pipefail
 
 CURRENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+is_on() {
+	case "${1:-}" in
+		1|on|ON|true|TRUE|yes|YES|y|Y) return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
+nerd_icons_enabled() {
+	local value
+	value="$(tmux show-option -gqv @agent-status-nerd-icons 2>/dev/null || true)"
+	is_on "$value"
+}
+
 usage() {
 	cat <<'EOF'
 usage: popup.sh [--list|--select-first]
@@ -16,6 +29,12 @@ EOF
 }
 
 format_rows() {
+	local nerd_icons="off"
+	if nerd_icons_enabled; then
+		nerd_icons="on"
+	fi
+	export AGENT_STATUS_NERD_ICONS="$nerd_icons"
+
 	# ANSI colors and UTF-8 glyphs confuse byte-based printf padding, so compute display cells.
 	"$CURRENT_DIR/agents.sh" tsv --refresh | perl -CSDA -Mutf8 -F'\t' -lane '
 		BEGIN {
@@ -77,6 +96,14 @@ format_rows() {
 			return $color . $label . $reset . ($padding > 0 ? " " x $padding : "");
 		}
 
+		sub agent_label {
+			my ($agent) = @_;
+			return $agent unless ($ENV{"AGENT_STATUS_NERD_ICONS"} // "") =~ /^(1|on|true|yes|y)$/i;
+			return " claude" if $agent eq "claude";
+			return " pi" if $agent eq "pi";
+			return $agent;
+		}
+
 		next if $. == 1;
 		my ($status, $agent, $target, $name, $session, $window, $pane, $cwd, $pane_id, $window_id, $session_id) = @F;
 		my ($state_label, $state_color) = ("? unknown", $dim);
@@ -91,8 +118,9 @@ format_rows() {
 		}
 
 		my $where = "$session:$window.$pane";
+		my $display_agent = agent_label($agent);
 		my $display = color_pad($state_label, $state_color, 10)
-			. " " . pad_right($agent, 8)
+			. " " . pad_right($display_agent, 10)
 			. " " . pad_right($where, 22)
 			. " " . pad_right($name, 20)
 			. " " . ($cwd // "");

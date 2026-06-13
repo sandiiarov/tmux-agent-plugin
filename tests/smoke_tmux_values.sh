@@ -69,6 +69,12 @@ wait_for_file "$popup_file"
 grep -F 'claude' "$popup_file" >/dev/null
 grep -F "$agent_pane" "$popup_file" >/dev/null
 
+icon_popup_file="$TMP_DIR/popup-icons.txt"
+run_tmux set-option -g @agent-status-nerd-icons on
+run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/popup.sh' --list > '$icon_popup_file'"
+wait_for_file "$icon_popup_file"
+grep -F ' claude' "$icon_popup_file" >/dev/null
+
 run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/popup.sh' --select-first"
 sleep 0.2
 active_pane="$(run_tmux display-message -p '#{pane_id}')"

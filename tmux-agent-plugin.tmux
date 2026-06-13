@@ -18,6 +18,7 @@ set_default_options() {
 	set_tmux_option_if_unset "$REPORT_TTL_OPTION" "$DEFAULT_REPORT_TTL"
 	set_tmux_option_if_unset "$NOTIFY_ACTIVE_OPTION" "$DEFAULT_NOTIFY_ACTIVE"
 	set_tmux_option_if_unset "$BINARY_OPTION" "$DEFAULT_BINARY"
+	set_tmux_option_if_unset "$NERD_ICONS_OPTION" "$DEFAULT_NERD_ICONS"
 	set_tmux_option_if_unset "$POPUP_KEY_OPTION" "$DEFAULT_POPUP_KEY"
 	set_tmux_option_if_unset "$POPUP_WIDTH_OPTION" "$DEFAULT_POPUP_WIDTH"
 	set_tmux_option_if_unset "$POPUP_HEIGHT_OPTION" "$DEFAULT_POPUP_HEIGHT"
