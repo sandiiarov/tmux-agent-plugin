@@ -25,6 +25,12 @@ set_default_options() {
 	set_tmux_option_if_unset "$POPUP_STYLE_OPTION" "$DEFAULT_POPUP_STYLE"
 	set_tmux_option_if_unset "$POPUP_BORDER_STYLE_OPTION" "$DEFAULT_POPUP_BORDER_STYLE"
 	set_tmux_option_if_unset "$POPUP_TITLE_OPTION" "$DEFAULT_POPUP_TITLE"
+	set_tmux_option_if_unset "$VIEW_KEY_OPTION" "$DEFAULT_VIEW_KEY"
+	set_tmux_option_if_unset "$VIEW_WIDTH_OPTION" "$DEFAULT_VIEW_WIDTH"
+	set_tmux_option_if_unset "$VIEW_REFRESH_OPTION" "$DEFAULT_VIEW_REFRESH"
+	set_tmux_option_if_unset "$VIEW_UP_KEY_OPTION" "$DEFAULT_VIEW_UP_KEY"
+	set_tmux_option_if_unset "$VIEW_DOWN_KEY_OPTION" "$DEFAULT_VIEW_DOWN_KEY"
+	set_tmux_option_if_unset "$VIEW_ENTER_KEY_OPTION" "$DEFAULT_VIEW_ENTER_KEY"
 }
 
 set_format_helpers() {
@@ -55,11 +61,36 @@ bind_popup_key() {
 	tmux bind-key "$key" display-popup -E -w "$width" -h "$height" -s "$style" -S "$border_style" -T "$title" "$SCRIPTS_DIR/popup.sh"
 }
 
+bind_view_key() {
+	local key up_key down_key enter_key
+	key="$(get_tmux_option "$VIEW_KEY_OPTION" "$DEFAULT_VIEW_KEY")"
+	if [ -z "$key" ] || [ "$key" = "off" ]; then
+		return 0
+	fi
+
+	tmux bind-key "$key" run-shell "AGENT_STATUS_TARGET_PANE='#{pane_id}' '$SCRIPTS_DIR/view.sh' toggle"
+
+	up_key="$(get_tmux_option "$VIEW_UP_KEY_OPTION" "$DEFAULT_VIEW_UP_KEY")"
+	down_key="$(get_tmux_option "$VIEW_DOWN_KEY_OPTION" "$DEFAULT_VIEW_DOWN_KEY")"
+	enter_key="$(get_tmux_option "$VIEW_ENTER_KEY_OPTION" "$DEFAULT_VIEW_ENTER_KEY")"
+
+	if [ -n "$up_key" ] && [ "$up_key" != "off" ]; then
+		tmux bind-key -n "$up_key" run-shell "AGENT_STATUS_TARGET_PANE='#{pane_id}' '$SCRIPTS_DIR/view.sh' up"
+	fi
+	if [ -n "$down_key" ] && [ "$down_key" != "off" ]; then
+		tmux bind-key -n "$down_key" run-shell "AGENT_STATUS_TARGET_PANE='#{pane_id}' '$SCRIPTS_DIR/view.sh' down"
+	fi
+	if [ -n "$enter_key" ] && [ "$enter_key" != "off" ]; then
+		tmux bind-key -n "$enter_key" run-shell "AGENT_STATUS_TARGET_PANE='#{pane_id}' '$SCRIPTS_DIR/view.sh' enter"
+	fi
+}
+
 main() {
 	ensure_agent_status_dirs
 	set_default_options
 	set_format_helpers
 	bind_popup_key
+	bind_view_key
 }
 
 main

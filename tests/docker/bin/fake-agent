@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+agent="$(basename "$0")"
+state="${FAKE_AGENT_STATE:-idle}"
+label="${FAKE_AGENT_LABEL:-$agent}"
+
+case "$state" in
+	blocked)
+		printf '%s needs permission to run this command.\n' "$label"
+		printf 'Do you want to proceed? [y/N]\n'
+		;;
+	working)
+		printf '⠋ %s is working on the requested task\n' "$label"
+		printf 'Running tools and editing files...\n'
+		;;
+	done)
+		printf '✓ %s completed the task\n' "$label"
+		printf 'Done.\n'
+		;;
+	idle|*)
+		printf '%s ready. No active task.\n' "$label"
+		printf '> '
+		;;
+esac
+
+# Keep the foreground process alive with argv[0] matching the agent command so
+# tmux-agent-plugin can discover it through process inspection in a clean test
+# container without real authenticated agent CLIs.
+exec -a "$agent" sleep 3600

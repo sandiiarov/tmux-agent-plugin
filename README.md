@@ -2,8 +2,8 @@
 
 A Rust, values-only tmux provider for AI/agent panes.
 
-It does **not** render a sidebar. It returns structured values for status bars
-and includes an optional `fzf` popup navigator:
+It primarily returns structured values for status bars and custom renderers,
+and includes optional tmux helpers for navigation:
 
 - full list of detected/open agent panes
 - agent status: `blocked`, `working`, `done`, `idle`, `unknown`
@@ -11,6 +11,7 @@ and includes an optional `fzf` popup navigator:
 - counts for status bars
 - spinner indicator when agents are working
 - notification transition events
+- optional split view: left agent list, right interactive tmux pane
 
 ## Install
 
@@ -33,6 +34,20 @@ cargo build --release
 ```tmux
 run-shell '/path/to/tmux-agent-plugin/tmux-agent-plugin.tmux'
 ```
+
+## Clean Docker integration test
+
+The repository includes a clean Docker smoke test that installs tmux, TPM, fzf,
+Rust tooling, and fake `pi`, `claude`, `codex`, `gemini`, and `opencode` agent
+commands. The fake agents exercise process/status detection without requiring
+authenticated real agent accounts.
+
+```sh
+./tests/docker_smoke.sh
+```
+
+The test verifies TPM loading, JSON values, popup formatting, split-view
+rendering, split-view controls, and that the right pane remains interactive.
 
 ## Status bar examples
 
@@ -143,9 +158,41 @@ Returns:
 }
 ```
 
+## Split view navigator
+
+The plugin includes an optional tmux split view. It is not bound by default.
+It creates a 20% left pane with agents grouped by tmux session, while the right
+side remains your real tmux pane/layout, so it is fully interactive.
+
+```tmux
+set -g @agent-status-view-key 'a'       # prefix + a toggles the view
+set -g @agent-status-view-width '20%'
+set -g @agent-status-view-refresh '2'
+set -g @agent-status-nerd-icons 'on'    # optional; claude =>  claude, pi =>  pi
+```
+
+Controls while the view is open:
+
+- `C-n`: move selection up in the agent list
+- `C-p`: move selection down in the agent list
+- `C-o`: focus the selected agent pane
+
+When the view is closed, these control keys are passed through to the active
+pane.
+
+You can also call it directly:
+
+```sh
+scripts/view.sh toggle
+scripts/view.sh render
+scripts/view.sh up
+scripts/view.sh down
+scripts/view.sh enter
+```
+
 ## Popup navigator
 
-The plugin includes an optional `fzf` popup helper. It is not bound by default.
+The plugin also includes an optional `fzf` popup helper. It is not bound by default.
 Enable it with:
 
 ```tmux

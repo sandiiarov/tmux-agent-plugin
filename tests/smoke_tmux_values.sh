@@ -21,7 +21,10 @@ run_tmux() {
 run_shell_wait() {
 	local target="$1"
 	local command="$2"
-	run_tmux run-shell -t "$target" "$command"
+	local done_file
+	done_file="$TMP_DIR/run-shell-$RANDOM.done"
+	run_tmux run-shell -t "$target" "($command) && printf done > '$done_file'"
+	wait_for_file "$done_file"
 }
 
 wait_for_file() {
@@ -74,6 +77,32 @@ run_tmux set-option -g @agent-status-nerd-icons on
 run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/popup.sh' --list > '$icon_popup_file'"
 wait_for_file "$icon_popup_file"
 grep -F ' claude' "$icon_popup_file" >/dev/null
+
+view_file="$TMP_DIR/view.txt"
+run_shell_wait "$normal_pane" "AGENT_STATUS_TARGET_PANE='$normal_pane' XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' render > '$view_file'"
+wait_for_file "$view_file"
+grep -F 'tap' "$view_file" >/dev/null
+grep -F ' claude' "$view_file" >/dev/null
+
+run_tmux set-option -g @agent-status-view-key a
+run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/tmux-agent-plugin.tmux'"
+run_shell_wait "$normal_pane" "AGENT_STATUS_TARGET_PANE='$normal_pane' XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' toggle"
+sleep 0.5
+view_pane="$(run_tmux show-option -wqv -t "$normal_pane" @agent-status-view-pane)"
+[ -n "$view_pane" ]
+run_tmux display-message -p -t "$view_pane" '#{pane_id}' >/dev/null
+run_shell_wait "$normal_pane" "AGENT_STATUS_TARGET_PANE='$normal_pane' XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' down"
+run_shell_wait "$normal_pane" "AGENT_STATUS_TARGET_PANE='$normal_pane' XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' up"
+run_shell_wait "$normal_pane" "AGENT_STATUS_TARGET_PANE='$normal_pane' XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' toggle"
+view_closed=0
+for _ in $(seq 1 30); do
+	if ! run_tmux list-panes -F '#{pane_title}' | grep -Fx 'tmux-agent-plugin-view' >/dev/null; then
+		view_closed=1
+		break
+	fi
+	sleep 0.2
+done
+[ "$view_closed" -eq 1 ]
 
 run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/popup.sh' --select-first"
 sleep 0.2
