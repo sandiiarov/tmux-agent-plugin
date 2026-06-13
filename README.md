@@ -169,9 +169,9 @@ set -g @agent-status-popup-key 'a'
 
 Then press `prefix + a` to open a searchable popup. The popup shows agent
 status, agent name, tmux target, display name, cwd, and a right-side pane
-preview. The preview uses `tmux capture-pane -e`, so existing ANSI colors from
-the pane are preserved. It keeps the pane's own line wrapping and disables
-fzf's extra preview wrapping to avoid wrap/return markers.
+preview. The preview uses `tmux capture-pane -e -J`, so existing ANSI colors
+from the pane are preserved and tmux's physical wrap points are joined back into
+logical lines. fzf preview wrapping is disabled to avoid wrap/return markers.
 
 Controls inside the popup:
 
