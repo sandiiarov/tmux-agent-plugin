@@ -11,7 +11,7 @@ and includes optional tmux helpers for navigation:
 - counts for status bars
 - spinner indicator when agents are working
 - notification transition events
-- optional popup view: left agent list, right live pane preview
+- optional `fzf` popup with search, jump, and ANSI-preserving pane preview
 
 ## Install
 
@@ -158,41 +158,9 @@ Returns:
 }
 ```
 
-## Popup view navigator
-
-The plugin includes an optional tmux popup view. It is not bound by default.
-It opens a real tmux popup with agents grouped by tmux session on the left and a
-captured preview of the selected pane on the right. Moving the selection updates
-the preview inside the popup instead of creating or focusing tmux panes.
-
-```tmux
-set -g @agent-status-view-key 'a'       # prefix + a opens the popup view
-set -g @agent-status-view-width '20%'   # left-column width inside the popup
-set -g @agent-status-view-refresh '2'
-set -g @agent-status-nerd-icons 'on'    # optional; claude =>  claude, pi =>  pi
-```
-
-Controls inside the popup:
-
-- `C-n`: move selection down and update the pane preview
-- `C-p`: move selection up and update the pane preview
-- `C-o`: jump to the selected real tmux pane and close the popup
-- `C-x`: close the popup
-
-The control keys are read by the popup process only; they are not bound globally
-in tmux.
-
-You can also call it directly:
-
-```sh
-scripts/view.sh popup
-scripts/view.sh render
-scripts/view.sh jump-index 0
-```
-
 ## Popup navigator
 
-The plugin also includes an optional `fzf` popup helper. It is not bound by default.
+The plugin includes an optional `fzf` tmux popup. It is not bound by default.
 Enable it with:
 
 ```tmux
@@ -200,8 +168,20 @@ set -g @agent-status-popup-key 'a'
 ```
 
 Then press `prefix + a` to open a searchable popup. The popup shows agent
-status, agent name, tmux target, display name, cwd, and a live pane preview.
-Press enter to jump to the selected pane. Press `ctrl-r` inside fzf to refresh.
+status, agent name, tmux target, display name, cwd, and a right-side pane
+preview. The preview uses `tmux capture-pane -e`, so existing ANSI colors from
+the pane are preserved, and the preview wraps instead of manually truncating
+long lines.
+
+Controls inside the popup:
+
+- `C-n` / `C-p`: move selection down/up
+- `C-o` or enter: jump to the selected real tmux pane and close the popup
+- `C-x` or escape: close the popup
+- `C-r`: refresh the agent list
+
+The control keys are read by `fzf` inside the popup only; they are not bound
+globally in tmux.
 
 Popup options:
 
@@ -210,6 +190,7 @@ set -g @agent-status-popup-key 'a'       # off by default
 set -g @agent-status-nerd-icons 'on'     # optional icons in popup rows
 set -g @agent-status-popup-width '94%'
 set -g @agent-status-popup-height '78%'
+set -g @agent-status-popup-preview-lines '200'
 set -g @agent-status-popup-title ' agents'
 set -g @agent-status-popup-style 'bg=terminal'
 set -g @agent-status-popup-border-style 'fg=#45475a,bg=terminal'

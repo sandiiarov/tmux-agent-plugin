@@ -124,7 +124,7 @@ assert_contains 'gemini' "$view_file"
 assert_contains '│' "$view_file"
 
 printf '[7/8] checking popup-view binding and controls\n'
-run_tmux list-keys | grep -F 'display-popup' | grep -F 'view.sh' >/dev/null
+run_tmux list-keys | grep -F 'display-popup' | grep -F 'popup.sh' >/dev/null
 for key in C-n C-p C-o C-x; do
 	if run_tmux list-keys -T root "$key" 2>/dev/null | grep -F 'view.sh' >/dev/null; then
 		printf 'view should not bind root %s outside the popup\n' "$key" >&2

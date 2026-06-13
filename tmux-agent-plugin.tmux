@@ -25,6 +25,7 @@ set_default_options() {
 	set_tmux_option_if_unset "$POPUP_STYLE_OPTION" "$DEFAULT_POPUP_STYLE"
 	set_tmux_option_if_unset "$POPUP_BORDER_STYLE_OPTION" "$DEFAULT_POPUP_BORDER_STYLE"
 	set_tmux_option_if_unset "$POPUP_TITLE_OPTION" "$DEFAULT_POPUP_TITLE"
+	set_tmux_option_if_unset "$POPUP_PREVIEW_LINES_OPTION" "$DEFAULT_POPUP_PREVIEW_LINES"
 	set_tmux_option_if_unset "$VIEW_KEY_OPTION" "$DEFAULT_VIEW_KEY"
 	set_tmux_option_if_unset "$VIEW_WIDTH_OPTION" "$DEFAULT_VIEW_WIDTH"
 	set_tmux_option_if_unset "$VIEW_REFRESH_OPTION" "$DEFAULT_VIEW_REFRESH"
@@ -97,7 +98,10 @@ bind_view_key() {
 	border_style="$(get_tmux_option "$POPUP_BORDER_STYLE_OPTION" "$DEFAULT_POPUP_BORDER_STYLE")"
 	title="$(get_tmux_option "$POPUP_TITLE_OPTION" "$DEFAULT_POPUP_TITLE")"
 
-	tmux bind-key "$key" display-popup -E -w "$width" -h "$height" -s "$style" -S "$border_style" -T "$title" "$SCRIPTS_DIR/view.sh" popup
+	# Compatibility: older configs may use @agent-status-view-key. It now opens
+	# the same fzf popup navigator as @agent-status-popup-key instead of creating
+	# panes or running the slower shell-rendered preview.
+	tmux bind-key "$key" display-popup -E -w "$width" -h "$height" -s "$style" -S "$border_style" -T "$title" "$SCRIPTS_DIR/popup.sh"
 }
 
 main() {

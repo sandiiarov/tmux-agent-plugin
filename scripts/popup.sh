@@ -30,13 +30,21 @@ EOF
 
 format_rows() {
 	local nerd_icons="off"
+	local refresh_arg=""
 	if nerd_icons_enabled; then
 		nerd_icons="on"
+	fi
+	if is_on "${AGENT_STATUS_REFRESH:-off}"; then
+		refresh_arg="--refresh"
 	fi
 	export AGENT_STATUS_NERD_ICONS="$nerd_icons"
 
 	# ANSI colors and UTF-8 glyphs confuse byte-based printf padding, so compute display cells.
-	"$CURRENT_DIR/agents.sh" tsv --refresh | perl -CSDA -Mutf8 -F'\t' -lane '
+	if [ -n "$refresh_arg" ]; then
+		"$CURRENT_DIR/agents.sh" tsv "$refresh_arg"
+	else
+		"$CURRENT_DIR/agents.sh" tsv
+	fi | perl -CSDA -Mutf8 -F'\t' -lane '
 		BEGIN {
 			$esc = "\e";
 			$reset = "$esc\[0m";
@@ -153,8 +161,17 @@ focus_pane() {
 	tmux select-pane -t "$pane_id" 2>/dev/null || true
 }
 
+preview_lines() {
+	local value
+	value="$(tmux show-option -gqv @agent-status-popup-preview-lines 2>/dev/null || true)"
+	case "$value" in
+		''|*[!0-9]*) printf '200\n' ;;
+		*) printf '%s\n' "$value" ;;
+	esac
+}
+
 open_popup() {
-	local rows selected pane_id window_id session_id
+	local rows selected pane_id window_id session_id lines
 	rows="$(format_rows)"
 	if [ -z "$rows" ]; then
 		printf 'No agent panes found.\n'
@@ -170,16 +187,18 @@ open_popup() {
 		return 1
 	fi
 
+	lines="$(preview_lines)"
 	selected="$(printf '%s\n' "$rows" | fzf \
 		--ansi \
 		--delimiter='\t' \
 		--with-nth=4 \
 		--nth=4 \
 		--prompt='agents> ' \
-		--header='enter: jump · ctrl-r: refresh · esc: close' \
-		--preview='tmux capture-pane -t {1} -p -J -S -30 2>/dev/null' \
-		--preview-window='down,45%,border-top' \
-		--bind="ctrl-r:reload('$CURRENT_DIR/popup.sh' --list)")" || return 0
+		--header='C-n/C-p: move · C-o/enter: jump · C-x/esc: close · C-r: refresh' \
+		--preview="tmux capture-pane -t {1} -e -p -J -S -$lines 2>/dev/null" \
+		--preview-window='right,80%,border-left,wrap' \
+		--bind='ctrl-n:down,ctrl-p:up,ctrl-o:accept,ctrl-x:abort' \
+		--bind="ctrl-r:reload(AGENT_STATUS_REFRESH=on '$CURRENT_DIR/popup.sh' --list)")" || return 0
 
 	IFS=$'\t' read -r pane_id window_id session_id _ <<< "$selected"
 	focus_pane "$pane_id" "$window_id" "$session_id"

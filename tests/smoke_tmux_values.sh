@@ -86,7 +86,7 @@ grep -F ' claude' "$view_file" >/dev/null
 
 run_tmux set-option -g @agent-status-view-key a
 run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/tmux-agent-plugin.tmux'"
-run_tmux list-keys | grep -F 'display-popup' | grep -F 'view.sh' >/dev/null
+run_tmux list-keys | grep -F 'display-popup' | grep -F 'popup.sh' >/dev/null
 if run_tmux list-keys -T root C-n 2>/dev/null | grep -F 'view.sh' >/dev/null; then
 	printf 'view should not bind root C-n outside the popup\n' >&2
 	exit 1

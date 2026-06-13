@@ -1,8 +1,7 @@
 # tmux-agent-plugin options
 
-This Rust plugin provides values for tmux formats/status bars and includes
-optional tmux navigators: a popup view and an `fzf` popup. Both are disabled
-unless you set a key.
+This Rust plugin provides values for tmux formats/status bars and includes an
+optional `fzf` tmux popup navigator. It is disabled unless you set a key.
 
 Set options before loading `tmux-agent-plugin.tmux` / the TPM plugin.
 
@@ -21,27 +20,6 @@ Set options before loading `tmux-agent-plugin.tmux` / the TPM plugin.
 | `@agent-status-binary` | empty | Optional path to a prebuilt `tmux-agent-plugin` Rust binary. |
 | `@agent-status-nerd-icons` | `off` | If `on`, use Nerd Font icons in formatted navigator rows. |
 
-## Popup view
-
-| Option | Default | Description |
-| --- | --- | --- |
-| `@agent-status-view-key` | `off` | Prefix key that opens the popup view, e.g. `a`. |
-| `@agent-status-view-width` | `20%` | Width of the left agent-list column inside the popup. Accepts cells or percent. |
-| `@agent-status-view-refresh` | `2` | Seconds between automatic popup refreshes. |
-
-Enable with:
-
-```tmux
-set -g @agent-status-view-key 'a'
-set -g @agent-status-view-width '20%'
-set -g @agent-status-nerd-icons 'on' # optional; claude =>  claude, pi =>  pi
-```
-
-The popup view groups agents by tmux session on the left and shows a captured
-preview of the selected pane on the right. It does not create tmux panes and it
-does not bind root keys. Controls are handled inside the popup: `C-n` selection
-down, `C-p` selection up, `C-o` jump to selected pane and close, `C-x` close.
-
 ## Popup
 
 | Option | Default | Description |
@@ -52,6 +30,8 @@ down, `C-p` selection up, `C-o` jump to selected pane and close, `C-x` close.
 | `@agent-status-popup-style` | `bg=terminal` | Popup style passed to `display-popup -s`. |
 | `@agent-status-popup-border-style` | `fg=#45475a,bg=terminal` | Border style passed to `display-popup -S`. |
 | `@agent-status-popup-title` | ` agents` | Popup title passed to `display-popup -T`. |
+| `@agent-status-popup-preview-lines` | `200` | Lines captured for the selected pane preview. |
+| `@agent-status-view-key` | `off` | Compatibility alias: if set, opens the same fzf popup as `@agent-status-popup-key`. Prefer `@agent-status-popup-key`. |
 
 Enable with:
 
@@ -60,8 +40,9 @@ set -g @agent-status-popup-key 'a'
 set -g @agent-status-nerd-icons 'on' # optional; claude =>  claude, pi =>  pi
 ```
 
-The popup uses `fzf`, supports search, shows a pane preview, `ctrl-r` refreshes,
-and enter jumps to the selected pane.
+The popup uses `fzf`, supports search, shows an ANSI-preserving wrapped pane
+preview (`tmux capture-pane -e`), `ctrl-r` refreshes, `ctrl-o`/enter jumps to
+the selected pane, and `ctrl-x` closes.
 
 ## Format helper options
 
