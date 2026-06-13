@@ -91,15 +91,12 @@ format_rows() {
 		}
 
 		my $where = "$session:$window.$pane";
-		print join "\t",
-			$pane_id,
-			$window_id,
-			$session_id,
-			color_pad($state_label, $state_color, 18),
-			pad_right($agent, 14),
-			pad_right($where, 24),
-			pad_right($name, 30),
-			($cwd // "");
+		my $display = color_pad($state_label, $state_color, 10)
+			. " " . pad_right($agent, 8)
+			. " " . pad_right($where, 22)
+			. " " . pad_right($name, 20)
+			. " " . ($cwd // "");
+		print join "\t", $pane_id, $window_id, $session_id, $display;
 	'
 }
 
@@ -148,8 +145,8 @@ open_popup() {
 	selected="$(printf '%s\n' "$rows" | fzf \
 		--ansi \
 		--delimiter='\t' \
-		--with-nth=4,5,6,7,8 \
-		--nth=4,5,6,7,8 \
+		--with-nth=4 \
+		--nth=4 \
 		--prompt='agents> ' \
 		--header='enter: jump · ctrl-r: refresh · esc: close' \
 		--preview='tmux capture-pane -t {1} -p -J -S -30 2>/dev/null' \
