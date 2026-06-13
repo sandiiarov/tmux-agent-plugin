@@ -1416,7 +1416,7 @@ fn classify_screen(
     }
 }
 
-fn raw_state_from_text(text: &str, changed: bool, agent_label: Option<&str>) -> (String, String) {
+fn raw_state_from_text(text: &str, _changed: bool, agent_label: Option<&str>) -> (String, String) {
     let normalized = normalize_screen(text);
     if normalized.is_empty() {
         return ("unknown".to_string(), "empty-capture".to_string());
@@ -1480,9 +1480,6 @@ fn raw_state_from_text(text: &str, changed: bool, agent_label: Option<&str>) -> 
             return ("idle".to_string(), format!("agent-idle-pattern:{agent}"));
         }
     }
-    if changed && agent_label.is_some() {
-        return ("working".to_string(), "output-changed".to_string());
-    }
     if agent_label.is_some() {
         return (
             "idle".to_string(),
@@ -1534,7 +1531,8 @@ fn working_patterns() -> &'static [Regex] {
     PATTERNS
         .get_or_init(|| {
             [
-                r"(?im)(^|\n)\s*[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏◐◓◑◒⣾⣽⣻⢿⡿⣟⣯⣷|/\\-]\s+\w+",
+                r"(?im)(^|\n)\s*[⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏◐◓◑◒⣾⣽⣻⢿⡿⣟⣯⣷]\s+\S+",
+                r"(?im)(^|\n)\s*[|/\\-]\s+(thinking|working|running|analyzing|analysing|generating|searching|planning|editing|writing|reading|executing|compiling|processing|streaming)\b",
                 r"(?im)\b(thinking|working|running|analyzing|analysing|generating|searching|planning|editing|writing|reading|executing|compiling)\b",
                 r"(?im)\b(calling|using|running)\s+(tool|command)",
                 r"(?im)\b(tool use|tool call|in progress|processing|streaming)\b",
@@ -1911,6 +1909,31 @@ mod tests {
             raw_state_from_text(&old_spinner, false, Some("pi")).0,
             "idle"
         );
+    }
+
+    #[test]
+    fn bullet_lists_do_not_match_ascii_spinner() {
+        let text =
+            "Reinstalled:\n - vim-tmux-navigator\n - tmux-agent-plugin\n~/Documents/project >";
+        let (state, reason) = raw_state_from_text(text, false, Some("pi"));
+        assert_eq!(state, "idle", "{reason}");
+    }
+
+    #[test]
+    fn changed_output_without_visible_working_signal_stays_idle() {
+        let result = classify_screen(
+            "ordinary transcript update without a prompt",
+            Some("codex"),
+            true,
+            &StateRecord {
+                state: "idle".to_string(),
+                hash: "different".to_string(),
+                ..StateRecord::default()
+            },
+            now_secs(),
+        );
+        assert_eq!(result.state, "idle");
+        assert_eq!(result.reason, "known-agent-no-active-evidence");
     }
 
     #[test]

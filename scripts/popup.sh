@@ -16,45 +16,90 @@ EOF
 }
 
 format_rows() {
-	"$CURRENT_DIR/agents.sh" tsv --refresh | awk -F '\t' '
+	# ANSI colors and UTF-8 glyphs confuse byte-based printf padding, so compute display cells.
+	"$CURRENT_DIR/agents.sh" tsv --refresh | perl -CSDA -Mutf8 -F'\t' -lane '
 		BEGIN {
-			esc = sprintf("%c", 27)
-			reset = esc "[0m"
-			red = esc "[31m"
-			yellow = esc "[33m"
-			green = esc "[32m"
-			blue = esc "[34m"
-			dim = esc "[2m"
+			$esc = "\e";
+			$reset = "$esc\[0m";
+			$red = "$esc\[31m";
+			$yellow = "$esc\[33m";
+			$green = "$esc\[32m";
+			$blue = "$esc\[34m";
+			$dim = "$esc\[2m";
 		}
-		NR == 1 { next }
-		{
-			status = $1
-			agent = $2
-			target = $3
-			name = $4
-			session = $5
-			window = $6
-			pane = $7
-			cwd = $8
-			pane_id = $9
-			window_id = $10
-			session_id = $11
 
-			if (status == "blocked") {
-				state = red "⚠ blocked" reset
-			} else if (status == "working") {
-				state = yellow "⠋ working" reset
-			} else if (status == "done") {
-				state = green "✓ done" reset
-			} else if (status == "idle") {
-				state = blue "• idle" reset
-			} else {
-				state = dim "? unknown" reset
+		sub is_combining {
+			my ($codepoint) = @_;
+			return ($codepoint >= 0x0300 && $codepoint <= 0x036f)
+				|| ($codepoint >= 0x1ab0 && $codepoint <= 0x1aff)
+				|| ($codepoint >= 0x1dc0 && $codepoint <= 0x1dff)
+				|| ($codepoint >= 0x20d0 && $codepoint <= 0x20ff)
+				|| ($codepoint >= 0xfe20 && $codepoint <= 0xfe2f);
+		}
+
+		sub is_wide {
+			my ($codepoint) = @_;
+			return ($codepoint >= 0x1100 && $codepoint <= 0x115f)
+				|| ($codepoint >= 0x2e80 && $codepoint <= 0xa4cf)
+				|| ($codepoint >= 0xac00 && $codepoint <= 0xd7a3)
+				|| ($codepoint >= 0xf900 && $codepoint <= 0xfaff)
+				|| ($codepoint >= 0xfe10 && $codepoint <= 0xfe19)
+				|| ($codepoint >= 0xfe30 && $codepoint <= 0xfe6f)
+				|| ($codepoint >= 0xff00 && $codepoint <= 0xff60)
+				|| ($codepoint >= 0xffe0 && $codepoint <= 0xffe6);
+		}
+
+		sub display_width {
+			my ($value) = @_;
+			$value //= "";
+			$value =~ s/\e\[[0-?]*[ -\/]*[@-~]//g;
+
+			my $width = 0;
+			for my $char (split //, $value) {
+				my $codepoint = ord($char);
+				next if $codepoint < 32 || ($codepoint >= 0x7f && $codepoint < 0xa0);
+				next if is_combining($codepoint);
+				$width += is_wide($codepoint) ? 2 : 1;
 			}
-
-			where = session ":" window "." pane
-			printf "%s\t%s\t%s\t%-18s\t%-14s\t%-24s\t%-30s\t%s\n", pane_id, window_id, session_id, state, agent, where, name, cwd
+			return $width;
 		}
+
+		sub pad_right {
+			my ($value, $width) = @_;
+			$value //= "";
+			my $padding = $width - display_width($value);
+			return $value . ($padding > 0 ? " " x $padding : "");
+		}
+
+		sub color_pad {
+			my ($label, $color, $width) = @_;
+			my $padding = $width - display_width($label);
+			return $color . $label . $reset . ($padding > 0 ? " " x $padding : "");
+		}
+
+		next if $. == 1;
+		my ($status, $agent, $target, $name, $session, $window, $pane, $cwd, $pane_id, $window_id, $session_id) = @F;
+		my ($state_label, $state_color) = ("? unknown", $dim);
+		if ($status eq "blocked") {
+			($state_label, $state_color) = ("⚠ blocked", $red);
+		} elsif ($status eq "working") {
+			($state_label, $state_color) = ("⠋ working", $yellow);
+		} elsif ($status eq "done") {
+			($state_label, $state_color) = ("✓ done", $green);
+		} elsif ($status eq "idle") {
+			($state_label, $state_color) = ("• idle", $blue);
+		}
+
+		my $where = "$session:$window.$pane";
+		print join "\t",
+			$pane_id,
+			$window_id,
+			$session_id,
+			color_pad($state_label, $state_color, 18),
+			pad_right($agent, 14),
+			pad_right($where, 24),
+			pad_right($name, 30),
+			($cwd // "");
 	'
 }
 
