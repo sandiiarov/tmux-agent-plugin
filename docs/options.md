@@ -31,6 +31,7 @@ Set options before loading `tmux-agent-plugin.tmux` / the TPM plugin.
 | `@agent-status-popup-border-style` | `fg=#45475a,bg=terminal` | Border style passed to `display-popup -S`. |
 | `@agent-status-popup-title` | ` agents` | Popup title passed to `display-popup -T`. |
 | `@agent-status-popup-preview-lines` | `200` | Lines captured for the selected pane preview. |
+| `@agent-status-popup-fzf-opts` | empty | Extra options passed to `fzf`; useful for colors/theme. Tmux formats are expanded at popup time. |
 | `@agent-status-view-key` | `off` | Compatibility alias: if set, opens the same fzf popup as `@agent-status-popup-key`. Prefer `@agent-status-popup-key`. |
 
 Enable with:
@@ -40,9 +41,16 @@ set -g @agent-status-popup-key 'a'
 set -g @agent-status-nerd-icons 'on' # optional; claude =>  claude, pi =>  pi
 ```
 
-The popup uses `fzf`, supports search, shows an ANSI-preserving wrapped pane
-preview (`tmux capture-pane -e`), `ctrl-r` refreshes, `ctrl-o`/enter jumps to
-the selected pane, and `ctrl-x` closes.
+The popup uses `fzf`, supports search, shows an ANSI-preserving pane preview
+(`tmux capture-pane -e`), keeps the pane's own wrapping, disables fzf preview
+wrapping, `ctrl-r` refreshes, `ctrl-o`/enter jumps to the selected pane, and
+escape closes.
+
+Terminal-palette theme example:
+
+```tmux
+set -g @agent-status-popup-fzf-opts '--color=fg:-1,bg:-1,fg+:-1,bg+:-1,gutter:-1,hl:5,hl+:5,info:6,prompt:5,pointer:5,marker:2,spinner:5,header:8,border:8'
+```
 
 ## Format helper options
 

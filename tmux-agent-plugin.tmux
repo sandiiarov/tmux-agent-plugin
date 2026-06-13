@@ -26,6 +26,7 @@ set_default_options() {
 	set_tmux_option_if_unset "$POPUP_BORDER_STYLE_OPTION" "$DEFAULT_POPUP_BORDER_STYLE"
 	set_tmux_option_if_unset "$POPUP_TITLE_OPTION" "$DEFAULT_POPUP_TITLE"
 	set_tmux_option_if_unset "$POPUP_PREVIEW_LINES_OPTION" "$DEFAULT_POPUP_PREVIEW_LINES"
+	set_tmux_option_if_unset "$POPUP_FZF_OPTS_OPTION" "$DEFAULT_POPUP_FZF_OPTS"
 	set_tmux_option_if_unset "$VIEW_KEY_OPTION" "$DEFAULT_VIEW_KEY"
 	set_tmux_option_if_unset "$VIEW_WIDTH_OPTION" "$DEFAULT_VIEW_WIDTH"
 	set_tmux_option_if_unset "$VIEW_REFRESH_OPTION" "$DEFAULT_VIEW_REFRESH"

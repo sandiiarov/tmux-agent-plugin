@@ -170,8 +170,14 @@ preview_lines() {
 	esac
 }
 
+popup_fzf_opts() {
+	# Use display-message so tmux format references in the option are expanded
+	# at popup time, e.g. Catppuccin's #{@thm_bg} / #{@thm_fg} variables.
+	tmux display-message -p '#{E:@agent-status-popup-fzf-opts}' 2>/dev/null || true
+}
+
 open_popup() {
-	local rows selected pane_id window_id session_id lines
+	local rows selected pane_id window_id session_id lines extra_opts
 	rows="$(format_rows)"
 	if [ -z "$rows" ]; then
 		printf 'No agent panes found.\n'
@@ -188,17 +194,26 @@ open_popup() {
 	fi
 
 	lines="$(preview_lines)"
+	extra_opts="$(popup_fzf_opts)"
+	set --
+	if [ -n "$extra_opts" ]; then
+		# User-controlled tmux option. Word-split intentionally so users can pass
+		# normal fzf flags such as: --color=fg:-1,bg:-1,border:8
+		eval "set -- $extra_opts"
+	fi
+
 	selected="$(printf '%s\n' "$rows" | fzf \
 		--ansi \
 		--delimiter='\t' \
 		--with-nth=4 \
 		--nth=4 \
 		--prompt='agents> ' \
-		--header='C-n/C-p: move · C-o/enter: jump · C-x/esc: close · C-r: refresh' \
-		--preview="tmux capture-pane -t {1} -e -p -J -S -$lines 2>/dev/null" \
-		--preview-window='right,80%,border-left,wrap' \
-		--bind='ctrl-n:down,ctrl-p:up,ctrl-o:accept,ctrl-x:abort' \
-		--bind="ctrl-r:reload(AGENT_STATUS_REFRESH=on '$CURRENT_DIR/popup.sh' --list)")" || return 0
+		--header='C-n/C-p: move · C-o/enter: jump · esc: close · C-r: refresh' \
+		--preview="tmux capture-pane -t {1} -e -p -S -$lines 2>/dev/null" \
+		--preview-window='right,80%,border-left,nowrap,+0' \
+		--bind='ctrl-n:down,ctrl-p:up,ctrl-o:accept' \
+		--bind="ctrl-r:reload(AGENT_STATUS_REFRESH=on '$CURRENT_DIR/popup.sh' --list)" \
+		"$@")" || return 0
 
 	IFS=$'\t' read -r pane_id window_id session_id _ <<< "$selected"
 	focus_pane "$pane_id" "$window_id" "$session_id"

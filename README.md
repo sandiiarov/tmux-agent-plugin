@@ -170,14 +170,14 @@ set -g @agent-status-popup-key 'a'
 Then press `prefix + a` to open a searchable popup. The popup shows agent
 status, agent name, tmux target, display name, cwd, and a right-side pane
 preview. The preview uses `tmux capture-pane -e`, so existing ANSI colors from
-the pane are preserved, and the preview wraps instead of manually truncating
-long lines.
+the pane are preserved. It keeps the pane's own line wrapping and disables
+fzf's extra preview wrapping to avoid wrap/return markers.
 
 Controls inside the popup:
 
 - `C-n` / `C-p`: move selection down/up
 - `C-o` or enter: jump to the selected real tmux pane and close the popup
-- `C-x` or escape: close the popup
+- escape: close the popup
 - `C-r`: refresh the agent list
 
 The control keys are read by `fzf` inside the popup only; they are not bound
@@ -194,6 +194,16 @@ set -g @agent-status-popup-preview-lines '200'
 set -g @agent-status-popup-title ' agents'
 set -g @agent-status-popup-style 'bg=terminal'
 set -g @agent-status-popup-border-style 'fg=#45475a,bg=terminal'
+# Optional fzf colors/options. This example uses your terminal palette/default bg.
+set -g @agent-status-popup-fzf-opts '--color=fg:-1,bg:-1,fg+:-1,bg+:-1,gutter:-1,hl:5,hl+:5,info:6,prompt:5,pointer:5,marker:2,spinner:5,header:8,border:8'
+```
+
+If you use Catppuccin tmux variables, you can theme the popup with tmux formats:
+
+```tmux
+set -g @agent-status-popup-style 'fg=#{@thm_fg},bg=#{@thm_bg}'
+set -g @agent-status-popup-border-style 'fg=#{@thm_surface1},bg=#{@thm_bg}'
+set -g @agent-status-popup-fzf-opts '--color=fg:#{@thm_fg},bg:#{@thm_bg},fg+:#{@thm_fg},bg+:#{@thm_surface0},hl:#{@thm_mauve},hl+:#{@thm_mauve},info:#{@thm_sky},prompt:#{@thm_mauve},pointer:#{@thm_rosewater},marker:#{@thm_green},spinner:#{@thm_rosewater},header:#{@thm_overlay1},border:#{@thm_surface1},gutter:#{@thm_bg}'
 ```
 
 You can also call the navigator directly:
