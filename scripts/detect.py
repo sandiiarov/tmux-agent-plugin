@@ -227,25 +227,39 @@ def screen_hash(text: str) -> str:
     return hashlib.sha256(normalize_screen(text).encode("utf-8", "replace")).hexdigest()
 
 
+def recent_screen(text: str, lines: int = 14) -> str:
+    normalized = normalize_screen(text)
+    if not normalized:
+        return ""
+    nonempty = [line for line in normalized.splitlines() if line.strip()]
+    return "\n".join(nonempty[-lines:])
+
+
 def raw_state_from_text(text: str, changed: bool, agent_label: str | None = None) -> tuple[str, str]:
     normalized = normalize_screen(text)
     if not normalized:
         return "unknown", "empty-capture"
+
+    # Status prompts are screen-local. Scanning the full capture makes old Pi or
+    # agent prompts in scrollback keep panes stuck as blocked/working, so classify
+    # from the bottom of the captured screen first.
+    recent = recent_screen(text)
+    tail = "\n".join(recent.splitlines()[-6:])
+
     for pattern in BLOCKED_PATTERNS:
-        if pattern.search(normalized):
+        if pattern.search(recent):
             return "blocked", f"blocked-pattern:{pattern.pattern}"
     if agent_label in AGENT_SPECIFIC_PATTERNS:
         for pattern in AGENT_SPECIFIC_PATTERNS[agent_label]["blocked"]:
-            if pattern.search(normalized):
+            if pattern.search(recent):
                 return "blocked", f"agent-blocked-pattern:{agent_label}:{pattern.pattern}"
     for pattern in WORKING_PATTERNS:
-        if pattern.search(normalized):
+        if pattern.search(recent):
             return "working", f"working-pattern:{pattern.pattern}"
     if agent_label in AGENT_SPECIFIC_PATTERNS:
         for pattern in AGENT_SPECIFIC_PATTERNS[agent_label]["working"]:
-            if pattern.search(normalized):
+            if pattern.search(recent):
                 return "working", f"agent-working-pattern:{agent_label}:{pattern.pattern}"
-    tail = "\n".join(normalized.splitlines()[-6:])
     for pattern in IDLE_PATTERNS:
         if pattern.search(tail):
             return "idle", f"idle-pattern:{pattern.pattern}"

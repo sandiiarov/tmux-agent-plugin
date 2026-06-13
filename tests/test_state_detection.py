@@ -31,6 +31,16 @@ class StateDetectionTests(unittest.TestCase):
         state, _ = detect.raw_state_from_text(fixture("idle.txt"), changed=False, agent_label="gemini")
         self.assertEqual(state, "idle")
 
+    def test_stale_blocker_in_scrollback_does_not_keep_pane_blocked(self):
+        text = "Do you want to proceed? [y/N]\n" + "\n".join(f"old line {index}" for index in range(20)) + "\nReady for your message >\n"
+        state, _ = detect.raw_state_from_text(text, changed=False, agent_label="pi")
+        self.assertEqual(state, "idle")
+
+    def test_stale_spinner_in_scrollback_does_not_keep_pane_working(self):
+        text = "⠋ Thinking\n" + "\n".join(f"old line {index}" for index in range(20)) + "\nReady for your message >\n"
+        state, _ = detect.raw_state_from_text(text, changed=False, agent_label="pi")
+        self.assertEqual(state, "idle")
+
     def test_output_change_marks_known_agent_working(self):
         result = detect.classify_screen(
             "%1",
