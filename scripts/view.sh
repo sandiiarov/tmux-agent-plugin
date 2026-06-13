@@ -40,7 +40,7 @@ window_option_unset() {
 
 usage() {
 	cat <<'EOF'
-usage: view.sh [toggle|pane|render|up|down|enter]
+usage: view.sh [toggle|pane|render|up|down|enter|close]
 
 Create a tmux split view with agents on the left and the current tmux pane on
 the right. The right side is the real tmux pane/layout, so it remains fully
@@ -52,7 +52,8 @@ Commands:
   render  Render the agent list once.
   up      Move selection up in the agent list.
   down    Move selection down in the agent list.
-  enter   Focus the selected agent pane.
+  enter   Focus the selected agent pane and close the view.
+  close   Close the view.
 EOF
 }
 
@@ -228,7 +229,7 @@ move_selection() {
 	index="$(selected_index)"
 	index=$(( (index + delta + count) % count ))
 	set_selected_index "$index"
-	refresh_view_pane "$existing"
+	focus_selected_pane keep-view
 }
 
 selected_agent_target() {
@@ -245,13 +246,11 @@ selected_agent_target() {
 	'
 }
 
-enter_selection() {
-	local existing selected pane_id window_id session_id current_window current_session index current_target
+focus_selected_pane() {
+	local mode existing selected pane_id window_id session_id current_window current_session index current_target
+	mode="${1:-keep-view}"
 	existing="$(current_view_pane)"
-	if ! view_pane_exists "$existing"; then
-		passthrough_key C-o
-		return 0
-	fi
+	view_pane_exists "$existing" || return 0
 
 	selected="$(selected_agent_target)"
 	[ -n "$selected" ] || return 0
@@ -265,12 +264,14 @@ enter_selection() {
 
 	if [ "$window_id" = "$current_window" ] && [ "$session_id" = "$current_session" ]; then
 		tmux select-pane -t "$pane_id" 2>/dev/null || true
-		refresh_view_pane "$existing"
+		if [ "$mode" = "close-view" ]; then
+			close_view
+		else
+			refresh_view_pane "$existing"
+		fi
 		return 0
 	fi
 
-	# When jumping across windows/sessions, move the view to the target so the
-	# left agent list remains visible and the target pane is still interactive.
 	close_view
 	if [ -n "$session_id" ]; then
 		tmux switch-client -t "$session_id" 2>/dev/null || true
@@ -281,7 +282,31 @@ enter_selection() {
 	tmux select-pane -t "$pane_id" 2>/dev/null || true
 	AGENT_STATUS_TARGET_PANE="$pane_id"
 	set_selected_index "$index"
-	open_view
+	if [ "$mode" != "close-view" ]; then
+		open_view
+	fi
+}
+
+enter_selection() {
+	local existing
+	existing="$(current_view_pane)"
+	if ! view_pane_exists "$existing"; then
+		passthrough_key C-o
+		return 0
+	fi
+
+	focus_selected_pane close-view
+}
+
+close_or_passthrough() {
+	local existing
+	existing="$(current_view_pane)"
+	if ! view_pane_exists "$existing"; then
+		passthrough_key C-x
+		return 0
+	fi
+
+	close_view
 }
 
 render_once() {
@@ -361,9 +386,20 @@ render_once() {
 	'
 }
 
+LAST_RENDER=""
+
 redraw() {
-	printf '\033[H\033[2J'
-	render_once || printf 'failed to render agents\n'
+	local output
+	if ! output="$(render_once 2>&1)"; then
+		output="failed to render agents"
+	fi
+
+	# Avoid flicker: collect/render off-screen first, repaint only when content
+	# changed, and never clear the pane before the next frame is ready.
+	if [ "$output" != "$LAST_RENDER" ]; then
+		printf '\033[H%s\033[J' "$output"
+		LAST_RENDER="$output"
+	fi
 }
 
 pane_loop() {
@@ -394,13 +430,16 @@ case "${1:-toggle}" in
 		render_once
 		;;
 	up)
-		move_selection -1 C-n
+		move_selection -1 C-p
 		;;
 	down)
-		move_selection 1 C-p
+		move_selection 1 C-n
 		;;
 	enter)
 		enter_selection
+		;;
+	close)
+		close_or_passthrough
 		;;
 	--help|-h|help)
 		usage

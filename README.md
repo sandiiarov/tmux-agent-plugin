@@ -173,9 +173,10 @@ set -g @agent-status-nerd-icons 'on'    # optional; claude =>  claude, pi => 
 
 Controls while the view is open:
 
-- `C-n`: move selection up in the agent list
-- `C-p`: move selection down in the agent list
-- `C-o`: focus the selected agent pane
+- `C-n`: move selection down in the agent list and focus that pane on the right
+- `C-p`: move selection up in the agent list and focus that pane on the right
+- `C-o`: enter the selected real tmux pane and close the left agent list
+- `C-x`: close the left agent list
 
 When the view is closed, these control keys are passed through to the active
 pane.

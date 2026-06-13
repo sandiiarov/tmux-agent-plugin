@@ -28,9 +28,10 @@ Set options before loading `tmux-agent-plugin.tmux` / the TPM plugin.
 | `@agent-status-view-key` | `off` | Prefix key that toggles the split view, e.g. `a`. |
 | `@agent-status-view-width` | `20%` | Width of the left agent-list pane. Accepts cells or percent. |
 | `@agent-status-view-refresh` | `2` | Seconds between automatic refreshes of the left pane. |
-| `@agent-status-view-up-key` | `C-n` | Root key that moves selection up while the view is open; passes through otherwise. |
-| `@agent-status-view-down-key` | `C-p` | Root key that moves selection down while the view is open; passes through otherwise. |
-| `@agent-status-view-enter-key` | `C-o` | Root key that focuses the selected agent pane while the view is open; passes through otherwise. |
+| `@agent-status-view-up-key` | `C-p` | Root key that moves selection up while the view is open; passes through otherwise. |
+| `@agent-status-view-down-key` | `C-n` | Root key that moves selection down while the view is open; passes through otherwise. |
+| `@agent-status-view-enter-key` | `C-o` | Root key that enters the selected agent pane and closes the view; passes through otherwise. |
+| `@agent-status-view-exit-key` | `C-x` | Root key that closes the view; passes through otherwise. |
 
 Enable with:
 
@@ -41,8 +42,9 @@ set -g @agent-status-nerd-icons 'on' # optional; claude =>  claude, pi => 
 ```
 
 The split view groups agents by tmux session on the left. The right side is the
-real tmux pane/layout, so it remains interactive. Controls: `C-n` selection up,
-`C-p` selection down, `C-o` focus selected pane.
+real tmux pane/layout, so it remains interactive. Controls: `C-n` selection
+down and focus on the right, `C-p` selection up and focus on the right, `C-o`
+enter selected pane and close the view, `C-x` close the view.
 
 ## Popup
 

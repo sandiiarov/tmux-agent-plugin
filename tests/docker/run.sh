@@ -132,22 +132,28 @@ run_tmux send-keys -t "$shell_pane" "printf interactive > '$TMP_DIR/interactive.
 wait_for_file "$TMP_DIR/interactive.txt"
 assert_contains 'interactive' "$TMP_DIR/interactive.txt"
 
-run_shell_wait "$shell_pane" "AGENT_STATUS_TARGET_PANE='$shell_pane' '$PLUGIN_DIR/scripts/view.sh' down"
-selected_index="$(run_tmux show-option -wqv -t "$shell_pane" @agent-status-view-index)"
-[ "$selected_index" = "1" ]
-run_shell_wait "$shell_pane" "AGENT_STATUS_TARGET_PANE='$shell_pane' '$PLUGIN_DIR/scripts/view.sh' up"
-selected_index="$(run_tmux show-option -wqv -t "$shell_pane" @agent-status-view-index)"
-[ "$selected_index" = "0" ]
-
 selected_tsv="$TMP_DIR/selected.tsv"
 run_shell_wait "$shell_pane" "'$PLUGIN_DIR/scripts/agents.sh' tsv --refresh > '$selected_tsv'"
-expected_selected_pane="$(awk -F '\t' 'NR == 2 { print $9 }' "$selected_tsv")"
-run_shell_wait "$shell_pane" "AGENT_STATUS_TARGET_PANE='$shell_pane' '$PLUGIN_DIR/scripts/view.sh' enter"
-active_after_enter="$(run_tmux display-message -p '#{pane_id}')"
-[ "$active_after_enter" = "$expected_selected_pane" ]
+expected_first_pane="$(awk -F '\t' 'NR == 2 { print $9 }' "$selected_tsv")"
+expected_second_pane="$(awk -F '\t' 'NR == 3 { print $9 }' "$selected_tsv")"
+[ -n "$expected_first_pane" ]
+[ -n "$expected_second_pane" ]
 
-# Close the view from the selected agent pane.
-run_shell_wait "$active_after_enter" "AGENT_STATUS_TARGET_PANE='$active_after_enter' '$PLUGIN_DIR/scripts/view.sh' toggle"
+run_shell_wait "$shell_pane" "AGENT_STATUS_TARGET_PANE='$shell_pane' '$PLUGIN_DIR/scripts/view.sh' down"
+active_after_down="$(run_tmux display-message -p '#{pane_id}')"
+[ "$active_after_down" = "$expected_second_pane" ]
+selected_index="$(run_tmux show-option -wqv -t "$active_after_down" @agent-status-view-index)"
+[ "$selected_index" = "1" ]
+
+run_shell_wait "$active_after_down" "AGENT_STATUS_TARGET_PANE='$active_after_down' '$PLUGIN_DIR/scripts/view.sh' up"
+active_after_up="$(run_tmux display-message -p '#{pane_id}')"
+[ "$active_after_up" = "$expected_first_pane" ]
+selected_index="$(run_tmux show-option -wqv -t "$active_after_up" @agent-status-view-index)"
+[ "$selected_index" = "0" ]
+
+run_shell_wait "$active_after_up" "AGENT_STATUS_TARGET_PANE='$active_after_up' '$PLUGIN_DIR/scripts/view.sh' enter"
+active_after_enter="$(run_tmux display-message -p '#{pane_id}')"
+[ "$active_after_enter" = "$expected_first_pane" ]
 for _ in $(seq 1 30); do
 	if ! run_tmux list-panes -F '#{pane_title}' | grep -Fx 'tmux-agent-plugin-view' >/dev/null; then
 		break
@@ -155,7 +161,22 @@ for _ in $(seq 1 30); do
 	sleep 0.1
 done
 if run_tmux list-panes -F '#{pane_title}' | grep -Fx 'tmux-agent-plugin-view' >/dev/null; then
-	printf 'view pane did not close\n' >&2
+	printf 'view pane did not close after enter\n' >&2
+	run_tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{pane_id} #{pane_title}' >&2
+	exit 1
+fi
+
+# C-x/close exits the view without changing panes.
+run_shell_wait "$active_after_enter" "AGENT_STATUS_TARGET_PANE='$active_after_enter' '$PLUGIN_DIR/scripts/view.sh' toggle"
+run_shell_wait "$active_after_enter" "AGENT_STATUS_TARGET_PANE='$active_after_enter' '$PLUGIN_DIR/scripts/view.sh' close"
+for _ in $(seq 1 30); do
+	if ! run_tmux list-panes -F '#{pane_title}' | grep -Fx 'tmux-agent-plugin-view' >/dev/null; then
+		break
+	fi
+	sleep 0.1
+done
+if run_tmux list-panes -F '#{pane_title}' | grep -Fx 'tmux-agent-plugin-view' >/dev/null; then
+	printf 'view pane did not close after close command\n' >&2
 	run_tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{pane_id} #{pane_title}' >&2
 	exit 1
 fi

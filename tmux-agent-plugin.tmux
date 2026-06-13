@@ -31,6 +31,7 @@ set_default_options() {
 	set_tmux_option_if_unset "$VIEW_UP_KEY_OPTION" "$DEFAULT_VIEW_UP_KEY"
 	set_tmux_option_if_unset "$VIEW_DOWN_KEY_OPTION" "$DEFAULT_VIEW_DOWN_KEY"
 	set_tmux_option_if_unset "$VIEW_ENTER_KEY_OPTION" "$DEFAULT_VIEW_ENTER_KEY"
+	set_tmux_option_if_unset "$VIEW_EXIT_KEY_OPTION" "$DEFAULT_VIEW_EXIT_KEY"
 }
 
 set_format_helpers() {
@@ -62,7 +63,7 @@ bind_popup_key() {
 }
 
 bind_view_key() {
-	local key up_key down_key enter_key
+	local key up_key down_key enter_key exit_key
 	key="$(get_tmux_option "$VIEW_KEY_OPTION" "$DEFAULT_VIEW_KEY")"
 	if [ -z "$key" ] || [ "$key" = "off" ]; then
 		return 0
@@ -73,6 +74,7 @@ bind_view_key() {
 	up_key="$(get_tmux_option "$VIEW_UP_KEY_OPTION" "$DEFAULT_VIEW_UP_KEY")"
 	down_key="$(get_tmux_option "$VIEW_DOWN_KEY_OPTION" "$DEFAULT_VIEW_DOWN_KEY")"
 	enter_key="$(get_tmux_option "$VIEW_ENTER_KEY_OPTION" "$DEFAULT_VIEW_ENTER_KEY")"
+	exit_key="$(get_tmux_option "$VIEW_EXIT_KEY_OPTION" "$DEFAULT_VIEW_EXIT_KEY")"
 
 	if [ -n "$up_key" ] && [ "$up_key" != "off" ]; then
 		tmux bind-key -n "$up_key" run-shell "AGENT_STATUS_TARGET_PANE='#{pane_id}' '$SCRIPTS_DIR/view.sh' up"
@@ -82,6 +84,9 @@ bind_view_key() {
 	fi
 	if [ -n "$enter_key" ] && [ "$enter_key" != "off" ]; then
 		tmux bind-key -n "$enter_key" run-shell "AGENT_STATUS_TARGET_PANE='#{pane_id}' '$SCRIPTS_DIR/view.sh' enter"
+	fi
+	if [ -n "$exit_key" ] && [ "$exit_key" != "off" ]; then
+		tmux bind-key -n "$exit_key" run-shell "AGENT_STATUS_TARGET_PANE='#{pane_id}' '$SCRIPTS_DIR/view.sh' close"
 	fi
 }
 
