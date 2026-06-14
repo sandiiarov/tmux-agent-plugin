@@ -172,7 +172,7 @@ set -g @agent-status-popup-key 'a'
 
 Then press `prefix + a` to open a searchable popup. The popup shows agent
 status icon, agent icon, pane title, and a right-side pane preview. The left
-list is 30% of the popup and the preview is 70%. The preview uses `tmux
+list is 25% of the popup and the preview is 75%. The preview uses `tmux
 capture-pane -e -J`, so existing ANSI colors from the pane are preserved and
 tmux's physical wrap points are joined back into logical lines. fzf preview
 wrapping is disabled to avoid wrap/return markers, and the preview follows the

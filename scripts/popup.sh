@@ -74,7 +74,7 @@ format_rows() {
 
 		next if $. == 1;
 		my ($status, $agent, $target, $name, $session, $window, $pane, $cwd, $pane_id, $window_id, $session_id) = @F;
-		my $display = status_icon($status) . " " . agent_label($agent) . " " . ($name // "");
+		my $display = status_icon($status) . " " . agent_label($agent) . "   " . ($name // "");
 		print join "\t", $pane_id, $window_id, $session_id, $display;
 	'
 }
@@ -153,7 +153,7 @@ open_popup() {
 		--prompt='agents> ' \
 		--header='C-n/C-p: move · enter: jump · esc: close · C-r: refresh' \
 		--preview="tmux capture-pane -t {1} -e -p -J -S -$lines 2>/dev/null" \
-		--preview-window='right,70%,border-left,nowrap,follow,noinfo' \
+		--preview-window='right,75%,border-left,nowrap,follow,noinfo' \
 		--bind='ctrl-n:down,ctrl-p:up' \
 		--bind="ctrl-r:reload(AGENT_STATUS_REFRESH=on '$CURRENT_DIR/popup.sh' --list)" \
 		"$@")" || return 0

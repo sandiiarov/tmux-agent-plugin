@@ -42,7 +42,7 @@ set -g @agent-status-nerd-icons 'on' # optional; claude =>  claude, pi => 
 ```
 
 The popup uses `fzf`, supports search, shows rows as status icon, agent icon,
-and pane title, with a 30% list and 70% ANSI-preserving pane preview (`tmux
+and pane title, with a 25% list and 75% ANSI-preserving pane preview (`tmux
 capture-pane -e -J`). It joins tmux physical wrap points back into logical
 lines, disables fzf preview wrapping, follows the bottom/latest output,
 `ctrl-r` refreshes, enter jumps to the selected pane, and escape closes.
