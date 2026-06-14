@@ -41,11 +41,11 @@ set -g @agent-status-popup-key 'a'
 set -g @agent-status-nerd-icons 'on' # optional; claude =>  claude, pi =>  pi
 ```
 
-The popup uses `fzf`, supports search, shows an ANSI-preserving pane preview
-(`tmux capture-pane -e -J`), joins tmux physical wrap points back into logical
+The popup uses `fzf`, supports search, shows rows as status icon, agent icon,
+and pane title, with a 30% list and 70% ANSI-preserving pane preview (`tmux
+capture-pane -e -J`). It joins tmux physical wrap points back into logical
 lines, disables fzf preview wrapping, follows the bottom/latest output,
-`ctrl-r` refreshes, `ctrl-o`/enter jumps to the selected pane, and escape
-closes.
+`ctrl-r` refreshes, enter jumps to the selected pane, and escape closes.
 
 Terminal-palette theme example:
 

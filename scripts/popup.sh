@@ -55,83 +55,26 @@ format_rows() {
 			$dim = "$esc\[2m";
 		}
 
-		sub is_combining {
-			my ($codepoint) = @_;
-			return ($codepoint >= 0x0300 && $codepoint <= 0x036f)
-				|| ($codepoint >= 0x1ab0 && $codepoint <= 0x1aff)
-				|| ($codepoint >= 0x1dc0 && $codepoint <= 0x1dff)
-				|| ($codepoint >= 0x20d0 && $codepoint <= 0x20ff)
-				|| ($codepoint >= 0xfe20 && $codepoint <= 0xfe2f);
-		}
-
-		sub is_wide {
-			my ($codepoint) = @_;
-			return ($codepoint >= 0x1100 && $codepoint <= 0x115f)
-				|| ($codepoint >= 0x2e80 && $codepoint <= 0xa4cf)
-				|| ($codepoint >= 0xac00 && $codepoint <= 0xd7a3)
-				|| ($codepoint >= 0xf900 && $codepoint <= 0xfaff)
-				|| ($codepoint >= 0xfe10 && $codepoint <= 0xfe19)
-				|| ($codepoint >= 0xfe30 && $codepoint <= 0xfe6f)
-				|| ($codepoint >= 0xff00 && $codepoint <= 0xff60)
-				|| ($codepoint >= 0xffe0 && $codepoint <= 0xffe6);
-		}
-
-		sub display_width {
-			my ($value) = @_;
-			$value //= "";
-			$value =~ s/\e\[[0-?]*[ -\/]*[@-~]//g;
-
-			my $width = 0;
-			for my $char (split //, $value) {
-				my $codepoint = ord($char);
-				next if $codepoint < 32 || ($codepoint >= 0x7f && $codepoint < 0xa0);
-				next if is_combining($codepoint);
-				$width += is_wide($codepoint) ? 2 : 1;
-			}
-			return $width;
-		}
-
-		sub pad_right {
-			my ($value, $width) = @_;
-			$value //= "";
-			my $padding = $width - display_width($value);
-			return $value . ($padding > 0 ? " " x $padding : "");
-		}
-
-		sub color_pad {
-			my ($label, $color, $width) = @_;
-			my $padding = $width - display_width($label);
-			return $color . $label . $reset . ($padding > 0 ? " " x $padding : "");
-		}
-
 		sub agent_label {
 			my ($agent) = @_;
 			return $agent unless ($ENV{"AGENT_STATUS_NERD_ICONS"} // "") =~ /^(1|on|true|yes|y)$/i;
-			return " claude" if $agent eq "claude";
-			return " pi" if $agent eq "pi";
+			return "" if $agent eq "claude";
+			return "" if $agent eq "pi";
 			return $agent;
+		}
+
+		sub status_icon {
+			my ($status) = @_;
+			return "$red⚠$reset" if $status eq "blocked";
+			return "$yellow●$reset" if $status eq "working";
+			return "$green✓$reset" if $status eq "done";
+			return "$blue•$reset" if $status eq "idle";
+			return "$dim?$reset";
 		}
 
 		next if $. == 1;
 		my ($status, $agent, $target, $name, $session, $window, $pane, $cwd, $pane_id, $window_id, $session_id) = @F;
-		my ($state_label, $state_color) = ("? unknown", $dim);
-		if ($status eq "blocked") {
-			($state_label, $state_color) = ("⚠ blocked", $red);
-		} elsif ($status eq "working") {
-			($state_label, $state_color) = ("⠋ working", $yellow);
-		} elsif ($status eq "done") {
-			($state_label, $state_color) = ("✓ done", $green);
-		} elsif ($status eq "idle") {
-			($state_label, $state_color) = ("• idle", $blue);
-		}
-
-		my $where = "$session:$window.$pane";
-		my $display_agent = agent_label($agent);
-		my $display = color_pad($state_label, $state_color, 10)
-			. " " . pad_right($display_agent, 10)
-			. " " . pad_right($where, 22)
-			. " " . pad_right($name, 20)
-			. " " . ($cwd // "");
+		my $display = status_icon($status) . " " . agent_label($agent) . " " . ($name // "");
 		print join "\t", $pane_id, $window_id, $session_id, $display;
 	'
 }
@@ -208,10 +151,10 @@ open_popup() {
 		--with-nth=4 \
 		--nth=4 \
 		--prompt='agents> ' \
-		--header='C-n/C-p: move · C-o/enter: jump · esc: close · C-r: refresh' \
+		--header='C-n/C-p: move · enter: jump · esc: close · C-r: refresh' \
 		--preview="tmux capture-pane -t {1} -e -p -J -S -$lines 2>/dev/null" \
-		--preview-window='right,80%,border-left,nowrap,follow,noinfo' \
-		--bind='ctrl-n:down,ctrl-p:up,ctrl-o:accept' \
+		--preview-window='right,70%,border-left,nowrap,follow,noinfo' \
+		--bind='ctrl-n:down,ctrl-p:up' \
 		--bind="ctrl-r:reload(AGENT_STATUS_REFRESH=on '$CURRENT_DIR/popup.sh' --list)" \
 		"$@")" || return 0
 

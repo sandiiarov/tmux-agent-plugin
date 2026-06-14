@@ -109,53 +109,29 @@ PY
 printf '[5/8] checking popup/list formatting\n'
 popup_file="$TMP_DIR/popup.txt"
 run_shell_wait "$shell_pane" "'$PLUGIN_DIR/scripts/popup.sh' --list > '$popup_file'"
-assert_contains ' pi' "$popup_file"
-assert_contains ' claude' "$popup_file"
+assert_contains '' "$popup_file"
+assert_contains '' "$popup_file"
 
-printf '[6/8] checking popup-view render format\n'
-view_file="$TMP_DIR/view.txt"
-run_shell_wait "$shell_pane" "AGENT_STATUS_TARGET_PANE='$shell_pane' '$PLUGIN_DIR/scripts/view.sh' render > '$view_file'"
-assert_contains '' "$view_file"
-assert_contains 'agents' "$view_file"
-assert_contains ' pi' "$view_file"
-assert_contains ' claude' "$view_file"
-assert_contains 'codex' "$view_file"
-assert_contains 'gemini' "$view_file"
-assert_contains '│' "$view_file"
-
-printf '[7/8] checking popup-view binding and controls\n'
+printf '[6/8] checking popup binding and no global controls\n'
 run_tmux list-keys | grep -F 'display-popup' | grep -F 'popup.sh' >/dev/null
 for key in C-n C-p C-o C-x; do
-	if run_tmux list-keys -T root "$key" 2>/dev/null | grep -F 'view.sh' >/dev/null; then
-		printf 'view should not bind root %s outside the popup\n' "$key" >&2
+	if run_tmux list-keys -T root "$key" 2>/dev/null | grep -F 'tmux-agent-plugin' >/dev/null; then
+		printf 'popup should not bind root %s\n' "$key" >&2
 		exit 1
 	fi
 done
 
+printf '[7/8] checking popup jump helper\n'
 selected_tsv="$TMP_DIR/selected.tsv"
 run_shell_wait "$shell_pane" "'$PLUGIN_DIR/scripts/agents.sh' tsv --refresh > '$selected_tsv'"
 expected_first_pane="$(awk -F '\t' 'NR == 2 { print $9 }' "$selected_tsv")"
-expected_second_pane="$(awk -F '\t' 'NR == 3 { print $9 }' "$selected_tsv")"
 [ -n "$expected_first_pane" ]
-[ -n "$expected_second_pane" ]
-
-# C-x exits the popup without jumping.
 run_tmux select-pane -t "$shell_pane"
-run_shell_wait "$shell_pane" "printf '\\030' | '$PLUGIN_DIR/scripts/view.sh' popup"
-active_after_close="$(run_tmux display-message -p '#{pane_id}')"
-[ "$active_after_close" = "$shell_pane" ]
-
-# C-n moves down inside the popup, then C-o jumps to that selected pane.
-run_shell_wait "$shell_pane" "printf '\\016\\017' | '$PLUGIN_DIR/scripts/view.sh' popup"
+run_shell_wait "$shell_pane" "'$PLUGIN_DIR/scripts/popup.sh' --select-first"
 active_after_jump="$(run_tmux display-message -p '#{pane_id}')"
-[ "$active_after_jump" = "$expected_second_pane" ]
-
-# Explicit jump helper is useful for non-interactive tests and should not create panes.
-run_shell_wait "$active_after_jump" "'$PLUGIN_DIR/scripts/view.sh' jump-index 0"
-active_after_helper="$(run_tmux display-message -p '#{pane_id}')"
-[ "$active_after_helper" = "$expected_first_pane" ]
+[ "$active_after_jump" = "$expected_first_pane" ]
 if run_tmux list-panes -F '#{pane_title}' | grep -Fx 'tmux-agent-plugin-view' >/dev/null; then
-	printf 'popup view should not create tmux panes\n' >&2
+	printf 'popup should not create tmux panes\n' >&2
 	run_tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index} #{pane_id} #{pane_title}' >&2
 	exit 1
 fi

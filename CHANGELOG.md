@@ -9,7 +9,7 @@
 - Added tmux format helper options such as `@agent-status-compact` and `@agent-status-json`.
 - Added `scripts/notify.sh` for transition events as JSON, tmux messages, or system notifications.
 - Added optional `scripts/popup.sh` fzf popup navigator with tmux options for key/size/style.
-- Improved the fzf popup preview to preserve ANSI colors, join tmux physical wraps into logical lines, avoid fzf wrap markers, follow the bottom/latest output, support `C-n`/`C-p`, `C-o` jump, escape close, extra fzf theme options, and refresh on demand.
+- Improved the fzf popup to use compact status/icon/title rows, a 30% list and 70% preview split, ANSI-preserving preview, joined tmux physical wraps, no fzf wrap markers, bottom-following preview, enter-only jump, escape close, extra fzf theme options, and refresh on demand.
 - Added a clean Docker integration harness with tmux, TPM, fzf, Rust tooling, and fake agent CLIs.
 - Added `@agent-status-nerd-icons` to show Nerd Font agent labels in navigator rows.
 - Kept `scripts/report.sh` for explicit status integrations, now backed by Rust.

@@ -76,26 +76,15 @@ icon_popup_file="$TMP_DIR/popup-icons.txt"
 run_tmux set-option -g @agent-status-nerd-icons on
 run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/popup.sh' --list > '$icon_popup_file'"
 wait_for_file "$icon_popup_file"
-grep -F ' claude' "$icon_popup_file" >/dev/null
+grep -F '' "$icon_popup_file" >/dev/null
 
-view_file="$TMP_DIR/view.txt"
-run_shell_wait "$normal_pane" "AGENT_STATUS_TARGET_PANE='$normal_pane' XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' render > '$view_file'"
-wait_for_file "$view_file"
-grep -F 'tap' "$view_file" >/dev/null
-grep -F ' claude' "$view_file" >/dev/null
-
-run_tmux set-option -g @agent-status-view-key a
+run_tmux set-option -g @agent-status-popup-key a
 run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/tmux-agent-plugin.tmux'"
 run_tmux list-keys | grep -F 'display-popup' | grep -F 'popup.sh' >/dev/null
-if run_tmux list-keys -T root C-n 2>/dev/null | grep -F 'view.sh' >/dev/null; then
-	printf 'view should not bind root C-n outside the popup\n' >&2
+if run_tmux list-keys -T root C-o 2>/dev/null | grep -F 'tmux-agent-plugin' >/dev/null; then
+	printf 'popup should not bind root C-o\n' >&2
 	exit 1
 fi
-run_shell_wait "$normal_pane" "printf '\\030' | XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' popup"
-run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/view.sh' jump-index 0"
-active_from_view="$(run_tmux display-message -p '#{pane_id}')"
-[ "$active_from_view" = "$agent_pane" ]
-run_tmux select-pane -t "$normal_pane"
 
 run_shell_wait "$normal_pane" "XDG_CACHE_HOME='$XDG_CACHE_HOME' XDG_DATA_HOME='$XDG_DATA_HOME' '$ROOT_DIR/scripts/popup.sh' --select-first"
 sleep 0.2
