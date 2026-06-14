@@ -171,8 +171,8 @@ set -g @agent-status-popup-key 'a'
 ```
 
 Then press `prefix + a` to open a searchable popup. The popup shows agent
-status icon, agent icon, pane title, and a right-side pane preview. The left
-list is 25% of the popup and the preview is 75%. The preview uses `tmux
+status icon, agent icon/label, pane title, and a right-side pane preview. The
+left list is 20% of the popup and the preview is 80%. The preview uses `tmux
 capture-pane -e -J`, so existing ANSI colors from the pane are preserved and
 tmux's physical wrap points are joined back into logical lines. fzf preview
 wrapping is disabled to avoid wrap/return markers, and the preview follows the
@@ -192,7 +192,14 @@ Popup options:
 
 ```tmux
 set -g @agent-status-popup-key 'a'       # off by default
-set -g @agent-status-nerd-icons 'on'     # optional icons in popup rows
+set -g @agent-status-nerd-icons 'on'     # legacy/auto icon toggle
+set -g @agent-status-popup-show-status-icon 'on'
+set -g @agent-status-popup-show-agent-icon 'auto'  # auto follows @agent-status-nerd-icons
+set -g @agent-status-popup-show-agent-label 'off'
+set -g @agent-status-agent-icon-pi ''
+set -g @agent-status-agent-icon-claude ''
+# Also supported: codex, gemini, opencode, cursor-agent, copilot, amp, droid,
+# grok, kimi, kiro, kilo, qodercli, hermes.
 set -g @agent-status-popup-width '94%'
 set -g @agent-status-popup-height '78%'
 set -g @agent-status-popup-preview-lines '200'

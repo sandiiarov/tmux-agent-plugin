@@ -32,6 +32,10 @@ Set options before loading `tmux-agent-plugin.tmux` / the TPM plugin.
 | `@agent-status-popup-title` | ` agents` | Popup title passed to `display-popup -T`. |
 | `@agent-status-popup-preview-lines` | `200` | Lines captured for the selected pane preview. |
 | `@agent-status-popup-fzf-opts` | empty | Extra options passed to `fzf`; useful for colors/theme. Tmux formats are expanded at popup time. |
+| `@agent-status-popup-show-status-icon` | `on` | Show/hide status icon in popup rows. |
+| `@agent-status-popup-show-agent-icon` | `auto` | Show/hide agent icon in popup rows. `auto` follows `@agent-status-nerd-icons`. |
+| `@agent-status-popup-show-agent-label` | `off` | Show/hide agent text label in popup rows. |
+| `@agent-status-agent-icon-<agent>` | varies | Per-agent icon override, e.g. `@agent-status-agent-icon-pi`, `@agent-status-agent-icon-claude`, `@agent-status-agent-icon-codex`. |
 | `@agent-status-view-key` | `off` | Compatibility alias: if set, opens the same fzf popup as `@agent-status-popup-key`. Prefer `@agent-status-popup-key`. |
 
 Enable with:
@@ -41,16 +45,17 @@ set -g @agent-status-popup-key 'a'
 set -g @agent-status-nerd-icons 'on' # optional; claude =>  claude, pi =>  pi
 ```
 
-The popup uses `fzf`, supports search, shows rows as status icon, agent icon,
-and pane title, with a 25% list and 75% ANSI-preserving pane preview (`tmux
-capture-pane -e -J`). It joins tmux physical wrap points back into logical
-lines, disables fzf preview wrapping, follows the bottom/latest output,
-`ctrl-r` refreshes, enter jumps to the selected pane, and escape closes.
+The popup uses `fzf`, supports search, shows configurable rows as status icon,
+agent icon/label, and pane title, with a 20% list and 80% ANSI-preserving pane
+preview (`tmux capture-pane -e -J`). It joins tmux physical wrap points back
+into logical lines, disables fzf preview wrapping, follows the bottom/latest
+output, shows shortcuts at the bottom of the preview, `ctrl-r` refreshes, enter
+jumps to the selected pane, and escape closes.
 
 Terminal-palette theme example:
 
 ```tmux
-set -g @agent-status-popup-fzf-opts '--color=fg:-1,bg:-1,fg+:-1,bg+:-1,gutter:-1,hl:5,hl+:5,info:6,prompt:5,pointer:5,marker:2,spinner:5,header:8,border:8'
+set -g @agent-status-popup-fzf-opts '--color=fg:-1,bg:-1,fg+:15,bg+:8,gutter:-1,hl:5,hl+:13,info:6,prompt:5,pointer:13,marker:10,spinner:13,header:8,border:8'
 ```
 
 ## Format helper options
